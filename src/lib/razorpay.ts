@@ -2,10 +2,13 @@ import crypto from 'node:crypto';
 import Razorpay from 'razorpay';
 import { getCoursePrice } from './courses';
 
+const DEFAULT_KEY_ID = 'rzp_test_TSuqR2TgA89zRU';
+const DEFAULT_KEY_SECRET = 'ieFRCrvdfVL2FyRoeogViDBm';
+
 // Initialize Razorpay instance lazily or with fallbacks
 export function getRazorpayClient(): Razorpay {
-  const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_placeholder_key_id';
-  const keySecret = process.env.RAZORPAY_KEY_SECRET || 'placeholder_razorpay_secret_key';
+  const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || DEFAULT_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET || DEFAULT_KEY_SECRET;
 
   return new Razorpay({
     key_id: keyId,
@@ -34,7 +37,7 @@ export async function createServerRazorpayOrder(
   userMetadata: { fullName: string; email: string; whatsappNumber: string }
 ): Promise<RazorpayOrderResult> {
   const priceINR = getCoursePrice(courseId);
-  const amountPaise = priceINR * 100; // Convert to paise
+  const amountPaise = priceINR * 100; // Convert to paise (e.g. 500 paise for ₹5)
   const receiptId = `rcpt_${courseId.toLowerCase()}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 
   const razorpay = getRazorpayClient();
@@ -52,7 +55,7 @@ export async function createServerRazorpayOrder(
     },
   });
 
-  const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || 'rzp_test_placeholder_key_id';
+  const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || DEFAULT_KEY_ID;
 
   return {
     ...order,
@@ -70,7 +73,7 @@ export function verifyRazorpaySignature(
   paymentId: string,
   signature: string
 ): boolean {
-  const secret = process.env.RAZORPAY_KEY_SECRET || 'placeholder_razorpay_secret_key';
+  const secret = process.env.RAZORPAY_KEY_SECRET || DEFAULT_KEY_SECRET;
   
   if (!orderId || !paymentId || !signature) {
     return false;
