@@ -1,0 +1,38 @@
+{
+  "name": "mastered-language-coach-speaking-challenge",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npx next dev",
+    "build": "npx next build",
+    "start": "npx next start",
+    "lint": "npx next lint"
+  },
+  "dependencies": {
+    "asynckit": "^0.5.0",
+    "axios": "^1.19.0",
+    "clsx": "^2.1.1",
+    "combined-stream": "^1.0.8",
+    "form-data": "^4.0.6",
+    "googleapis": "^144.0.0",
+    "lucide-react": "^0.438.0",
+    "next": "^14.2.10",
+    "nodemailer": "^6.9.15",
+    "razorpay": "^2.9.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^2.5.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.5.4",
+    "@types/nodemailer": "^6.4.15",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.10",
+    "postcss": "^8.4.45",
+    "tailwindcss": "^3.4.10",
+    "typescript": "^5.5.4"
+  }
+}
