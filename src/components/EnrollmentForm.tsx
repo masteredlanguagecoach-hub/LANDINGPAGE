@@ -1,17 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Course } from '@/types';
-import { validateFullName, validateWhatsAppNumber, normalizeWhatsAppNumber } from '@/lib/validation';
+import { validateFullName, validateWhatsAppNumber } from '@/lib/validation';
 import {
-  ShieldCheck,
   CheckCircle2,
   Lock,
   Loader2,
   ArrowRight,
   AlertCircle,
-  Sparkles,
-  PhoneCall,
   Mail,
   User,
 } from 'lucide-react';
@@ -59,7 +56,7 @@ export default function EnrollmentForm({
 
   // Selected Course
   const selectedCourse = courses.find((c) => c.id === selectedCourseId) || courses[0];
-  const currentPrice = selectedCourse ? selectedCourse.price : 499;
+  const currentPrice = selectedCourse ? selectedCourse.price : 5;
 
   // Reset Email Verification if user changes email text
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -75,14 +72,14 @@ export default function EnrollmentForm({
   };
 
   // Trigger Email Existence Verification
-  const handleVerifyEmail = async () => {
+  const handleVerifyEmail = async (): Promise<boolean> => {
     setEmailVerifyMsg(null);
     setErrors((prev) => ({ ...prev, email: undefined }));
 
     const trimmed = email.trim();
     if (!trimmed) {
-      setErrors((prev) => ({ ...prev, email: 'Please enter your email address first.' }));
-      return;
+      setErrors((prev) => ({ ...prev, email: 'Please enter your email address.' }));
+      return false;
     }
 
     setIsVerifyingEmail(true);
@@ -99,20 +96,23 @@ export default function EnrollmentForm({
       if (data.valid) {
         setIsEmailVerified(true);
         setEmailVerifyMsg({ text: data.message || '✓ Email verified and active', isError: false });
+        return true;
       } else {
         setIsEmailVerified(false);
         setEmailVerifyMsg({ text: data.message || 'This email domain does not appear to exist.', isError: true });
         setErrors((prev) => ({ ...prev, email: data.message }));
+        return false;
       }
     } catch (err: any) {
       console.error('Email verify error:', err);
       setEmailVerifyMsg({ text: 'Error verifying email address. Please try again.', isError: true });
+      return false;
     } finally {
       setIsVerifyingEmail(false);
     }
   };
 
-  // Submit Handler -> Creates Order -> Opens Razorpay
+  // Submit Handler -> Validates -> Auto Verifies Email if needed -> Creates Order -> Opens Razorpay
   const handleEnrollAndPay = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
@@ -124,15 +124,16 @@ export default function EnrollmentForm({
       return;
     }
 
-    // 2. Validate Email Verification
+    // 2. Validate & Verify Email
     if (!email.trim()) {
       setErrors((prev) => ({ ...prev, email: 'Please enter your email address.' }));
       return;
     }
 
-    if (!isEmailVerified) {
-      setErrors((prev) => ({ ...prev, email: 'Please click "Verify Email" to verify your email address.' }));
-      return;
+    let verified = isEmailVerified;
+    if (!verified) {
+      verified = await handleVerifyEmail();
+      if (!verified) return;
     }
 
     // 3. Validate WhatsApp Number
@@ -196,7 +197,6 @@ export default function EnrollmentForm({
           color: '#E50914',
         },
         handler: async function (response: any) {
-          // Razorpay returns: razorpay_payment_id, razorpay_order_id, razorpay_signature
           try {
             const verifyRes = await fetch('/api/payment/verify', {
               method: 'POST',
@@ -368,7 +368,7 @@ export default function EnrollmentForm({
 
                 <button
                   type="button"
-                  onClick={handleVerifyEmail}
+                  onClick={() => handleVerifyEmail()}
                   disabled={isVerifyingEmail || isEmailVerified || !email.trim()}
                   className={`px-5 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all flex-shrink-0 cursor-pointer ${
                     isEmailVerified
@@ -467,13 +467,18 @@ export default function EnrollmentForm({
             {/* Primary Payment CTA Button */}
             <button
               type="submit"
-              disabled={isProcessingPayment || !isEmailVerified}
+              disabled={isProcessingPayment || isVerifyingEmail}
               className="w-full bg-brand-500 hover:bg-brand-600 active:bg-brand-700 disabled:bg-slate-300 text-white font-black text-lg sm:text-xl py-4 sm:py-5 rounded-2xl shadow-xl shadow-brand-500/20 hover:shadow-2xl transition-all duration-200 flex items-center justify-center gap-3 cursor-pointer disabled:cursor-not-allowed"
             >
               {isProcessingPayment ? (
                 <>
                   <Loader2 className="w-6 h-6 animate-spin text-white" />
                   <span>Processing...</span>
+                </>
+              ) : isVerifyingEmail ? (
+                <>
+                  <Loader2 className="w-6 h-6 animate-spin text-white" />
+                  <span>Verifying Email...</span>
                 </>
               ) : (
                 <>
@@ -482,12 +487,6 @@ export default function EnrollmentForm({
                 </>
               )}
             </button>
-
-            {!isEmailVerified && (
-              <p className="text-xs text-amber-700 font-semibold text-center bg-amber-50 p-2.5 rounded-xl border border-amber-200/70">
-                ⚠️ Please click "Verify Email" above before proceeding to payment.
-              </p>
-            )}
 
             {/* Razorpay Security Badge */}
             <div className="pt-2 flex items-center justify-center gap-2 text-xs font-bold text-slate-500">
