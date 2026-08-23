@@ -13,6 +13,8 @@ import {
   Sparkles,
   MessageCircle,
   Key,
+  Copy,
+  Check,
 } from 'lucide-react';
 
 interface SuccessViewProps {
@@ -32,6 +34,8 @@ export default function SuccessView({ data }: SuccessViewProps) {
   const [isResending, setIsResending] = useState(false);
   const [resendStatus, setResendStatus] = useState<{ text: string; isError: boolean } | null>(null);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  const [hasCopiedPassword, setHasCopiedPassword] = useState(false);
+  const [hasCopiedAdmission, setHasCopiedAdmission] = useState(false);
 
   const admissionNum = data.admissionNumber || data.enrollmentId || 'MLC786';
 
@@ -43,6 +47,22 @@ export default function SuccessView({ data }: SuccessViewProps) {
     `Hi Mastered Language Coach, I have completed my payment! My Admission No is ${admissionNum} (${data.registeredEmail}). Please assist me with my speaking challenge access.`
   );
   const whatsappUrl = `https://wa.me/${supportWhatsapp}?text=${whatsappMessage}`;
+
+  const handleCopyPassword = () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(admissionNum);
+      setHasCopiedPassword(true);
+      setTimeout(() => setHasCopiedPassword(false), 2500);
+    }
+  };
+
+  const handleCopyAdmission = () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(admissionNum);
+      setHasCopiedAdmission(true);
+      setTimeout(() => setHasCopiedAdmission(false), 2500);
+    }
+  };
 
   // Cooldown timer effect
   useEffect(() => {
@@ -140,18 +160,37 @@ export default function SuccessView({ data }: SuccessViewProps) {
             Your account has been created in the app. You can sign in now with this email and password:
           </p>
 
-          <div className="bg-white p-3.5 rounded-xl border border-slate-200 text-left text-xs sm:text-sm font-mono space-y-2 max-w-md mx-auto shadow-xs">
+          <div className="bg-white p-4 rounded-xl border border-slate-200 text-left text-xs sm:text-sm font-mono space-y-3 max-w-md mx-auto shadow-xs">
             <div className="flex items-center justify-between">
               <span className="text-slate-500 font-sans font-bold flex items-center gap-1.5">
                 <MailCheck className="w-4 h-4 text-slate-400" /> Sign In Email:
               </span>
               <span className="text-slate-900 font-black">{data.registeredEmail}</span>
             </div>
-            <div className="flex items-center justify-between border-t border-slate-100 pt-2">
+            <div className="flex items-center justify-between border-t border-slate-100 pt-2.5">
               <span className="text-slate-500 font-sans font-bold flex items-center gap-1.5">
                 <Key className="w-4 h-4 text-slate-400" /> Password:
               </span>
-              <span className="text-brand-600 font-black">{admissionNum}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-brand-600 font-black text-base">{admissionNum}</span>
+                <button
+                  onClick={handleCopyPassword}
+                  type="button"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-sans font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 active:scale-95 rounded-lg border border-slate-300 transition-all cursor-pointer"
+                >
+                  {hasCopiedPassword ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="text-emerald-700 font-extrabold">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Copy</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -162,9 +201,22 @@ export default function SuccessView({ data }: SuccessViewProps) {
             Enrollment Receipt Details
           </h3>
 
-          <div className="grid grid-cols-2 gap-2 text-sm">
+          <div className="grid grid-cols-2 gap-2 text-sm items-center">
             <span className="text-slate-500 font-semibold">Admission Number:</span>
-            <span className="text-brand-600 font-mono font-black text-right">{admissionNum}</span>
+            <div className="flex items-center justify-end gap-2">
+              <span className="text-brand-600 font-mono font-black text-base">{admissionNum}</span>
+              <button
+                onClick={handleCopyAdmission}
+                type="button"
+                className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-sans font-bold bg-white hover:bg-slate-100 text-slate-700 rounded-md border border-slate-300 transition-all cursor-pointer"
+              >
+                {hasCopiedAdmission ? (
+                  <Check className="w-3 h-3 text-emerald-600" />
+                ) : (
+                  <Copy className="w-3 h-3 text-slate-500" />
+                )}
+              </button>
+            </div>
 
             <span className="text-slate-500 font-semibold">Course Enrolled:</span>
             <span className="text-slate-950 font-extrabold text-right">{data.courseName}</span>

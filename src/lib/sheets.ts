@@ -83,7 +83,7 @@ export const PAYMENT_LOGS_HEADERS = [
 
 /**
  * Sends student registration payload to Google Apps Script Web App URL.
- * Uses await, query parameters, and redirect: follow so Vercel serverless doesn't freeze the request.
+ * Uses await, query parameters, and redirect: follow so Vercel serverless context doesn't terminate early.
  */
 async function sendToAppsScript(action: string, payload: any): Promise<boolean> {
   const scriptUrl = getAppsScriptUrl();
@@ -121,33 +121,50 @@ async function sendToAppsScript(action: string, payload: any): Promise<boolean> 
 
 /**
  * Generates sequential Admission Number starting from MLC786 (MLC786, MLC787, MLC788, ...).
+ * Queries Google Apps Script or Google Sheets API to read the exact row count.
  */
 export async function getNextAdmissionNumber(): Promise<string> {
   const STARTING_NO = 786;
   const spreadsheetId = getSpreadsheetId();
   const sheets = getGoogleSheetsClient();
+  const scriptUrl = getAppsScriptUrl();
 
-  if (!sheets || !spreadsheetId) {
-    const nextNum = STARTING_NO + inMemoryPaidStudents.length;
-    return `MLC${nextNum}`;
+  // 1. Try Google Apps Script URL first if available
+  if (scriptUrl) {
+    try {
+      const res = await fetch(`${scriptUrl}?action=getNextAdmissionNumber`, {
+        cache: 'no-store',
+        redirect: 'follow',
+      });
+      const data = await res.json();
+      if (data && data.admissionNumber) {
+        return data.admissionNumber;
+      }
+    } catch (err) {
+      console.warn('[GoogleSheets] Failed to fetch Admission Number from Apps Script:', err);
+    }
   }
 
-  try {
-    const res = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range: `${PAID_STUDENTS_SHEET}!A:B`,
-    });
+  // 2. Try Google Sheets API if credentials present
+  if (sheets && spreadsheetId) {
+    try {
+      const res = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: `${PAID_STUDENTS_SHEET}!A:B`,
+      });
 
-    const rows = res.data.values;
-    // Header is row 0; count of existing students = rows.length - 1
-    const studentCount = rows && rows.length > 1 ? rows.length - 1 : 0;
-    const nextNum = STARTING_NO + studentCount;
-    return `MLC${nextNum}`;
-  } catch (error) {
-    console.warn('[GoogleSheets] Failed to fetch row count for Admission Number, using fallback count:', error);
-    const nextNum = STARTING_NO + inMemoryPaidStudents.length;
-    return `MLC${nextNum}`;
+      const rows = res.data.values;
+      const studentCount = rows && rows.length > 1 ? rows.length - 1 : 0;
+      const nextNum = STARTING_NO + studentCount;
+      return `MLC${nextNum}`;
+    } catch (error) {
+      console.warn('[GoogleSheets] Failed to fetch row count for Admission Number:', error);
+    }
   }
+
+  // 3. Fallback count
+  const nextNum = STARTING_NO + inMemoryPaidStudents.length;
+  return `MLC${nextNum}`;
 }
 
 /**
