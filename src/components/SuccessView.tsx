@@ -10,6 +10,9 @@ import {
   Loader2,
   AlertCircle,
   ShieldCheck,
+  Sparkles,
+  MessageCircle,
+  Key,
 } from 'lucide-react';
 
 interface SuccessViewProps {
@@ -32,8 +35,14 @@ export default function SuccessView({ data }: SuccessViewProps) {
 
   const admissionNum = data.admissionNumber || data.enrollmentId || 'MLC786';
 
-  // Practice Web App Link from env or default
+  // Practice Web App & Support WhatsApp Links
   const practiceUrl = process.env.NEXT_PUBLIC_PRACTICE_WEBAPP_URL || 'https://practice.masteredlanguagecoach.com';
+  const supportWhatsapp = (process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP_NUMBER || '919876543210').replace(/\D/g, '');
+
+  const whatsappMessage = encodeURIComponent(
+    `Hi Mastered Language Coach, I have completed my payment! My Admission No is ${admissionNum} (${data.registeredEmail}). Please assist me with my speaking challenge access.`
+  );
+  const whatsappUrl = `https://wa.me/${supportWhatsapp}?text=${whatsappMessage}`;
 
   // Cooldown timer effect
   useEffect(() => {
@@ -121,17 +130,29 @@ export default function SuccessView({ data }: SuccessViewProps) {
           </p>
         </div>
 
-        {/* Primary Callout: Check Email */}
-        <div className="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-5 sm:p-6 text-center space-y-2">
-          <div className="inline-flex items-center justify-center gap-2 text-emerald-800 font-black text-lg">
-            <MailCheck className="w-6 h-6 text-emerald-600" />
-            <span>Please check your email.</span>
+        {/* App Account Created Banner */}
+        <div className="bg-gradient-to-br from-brand-50 via-white to-slate-50 border-2 border-brand-200 rounded-2xl p-5 sm:p-6 text-center space-y-3 shadow-sm">
+          <div className="inline-flex items-center justify-center gap-2 text-brand-700 font-extrabold text-base sm:text-lg">
+            <Sparkles className="w-5 h-5 text-brand-500 animate-pulse" />
+            <span>Account Created in the App!</span>
           </div>
-          <p className="text-sm font-medium text-emerald-900 leading-relaxed">
-            We have sent your Speaking Challenge practice web app link and enrollment details to your registered email address:
+          <p className="text-sm font-semibold text-slate-700 leading-relaxed">
+            Your account has been created in the app. You can sign in now with this email and password:
           </p>
-          <div className="bg-white py-2 px-4 rounded-xl border border-emerald-200 inline-block font-extrabold text-slate-900 text-sm">
-            {data.registeredEmail}
+
+          <div className="bg-white p-3.5 rounded-xl border border-slate-200 text-left text-xs sm:text-sm font-mono space-y-2 max-w-md mx-auto shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-slate-500 font-sans font-bold flex items-center gap-1.5">
+                <MailCheck className="w-4 h-4 text-slate-400" /> Sign In Email:
+              </span>
+              <span className="text-slate-900 font-black">{data.registeredEmail}</span>
+            </div>
+            <div className="flex items-center justify-between border-t border-slate-100 pt-2">
+              <span className="text-slate-500 font-sans font-bold flex items-center gap-1.5">
+                <Key className="w-4 h-4 text-slate-400" /> Password:
+              </span>
+              <span className="text-brand-600 font-black">{admissionNum}</span>
+            </div>
           </div>
         </div>
 
@@ -158,16 +179,28 @@ export default function SuccessView({ data }: SuccessViewProps) {
           </div>
         </div>
 
-        {/* Practice Web App Direct Launch Button */}
+        {/* Action Buttons: Sign In App + WhatsApp Message */}
         <div className="space-y-3">
+          {/* Practice Web App Sign In Button */}
           <a
             href={practiceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full bg-brand-500 hover:bg-brand-600 active:bg-brand-700 text-white font-extrabold text-lg py-4 rounded-2xl shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-3 text-center"
+            className="w-full bg-brand-500 hover:bg-brand-600 active:bg-brand-700 text-white font-extrabold text-lg py-4 rounded-2xl shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-3 text-center cursor-pointer"
           >
-            <span>Start Practice Web App Now</span>
+            <span>Sign In to Practice Web App</span>
             <ExternalLink className="w-5 h-5" />
+          </a>
+
+          {/* Personal WhatsApp Support Button */}
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-lg py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3 text-center cursor-pointer"
+          >
+            <MessageCircle className="w-6 h-6 fill-current" />
+            <span>Message on WhatsApp</span>
           </a>
 
           {/* Spam Folder Warning & Resend Button */}

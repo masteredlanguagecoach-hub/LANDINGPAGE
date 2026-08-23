@@ -41,6 +41,8 @@ export function buildWelcomeEmailHtml(data: WelcomeEmailData): string {
   const practiceUrl = process.env.PRACTICE_WEBAPP_URL || 'https://practice.masteredlanguagecoach.com';
   const logoUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/logo.png`;
   const admissionNum = data.admissionNumber || 'MLC786';
+  const supportWhatsapp = (process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP_NUMBER || '919876543210').replace(/\D/g, '');
+  const whatsappUrl = `https://wa.me/${supportWhatsapp}?text=${encodeURIComponent(`Hi Mastered Language Coach, I have enrolled in the Speaking Challenge! Admission No: ${admissionNum}`)}`;
 
   return `
 <!DOCTYPE html>
@@ -58,13 +60,16 @@ export function buildWelcomeEmailHtml(data: WelcomeEmailData): string {
     .badge { display: inline-block; background-color: #dcfce7; color: #15803d; font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 20px; }
     h1 { color: #0f172a; font-size: 24px; font-weight: 800; margin: 0 0 15px 0; }
     p { font-size: 16px; line-height: 1.6; color: #475569; margin: 0 0 20px 0; }
+    .account-box { background-color: #fff1f2; border: 2px solid #fecdd3; border-radius: 14px; padding: 20px; margin: 25px 0; text-align: center; }
+    .account-title { color: #e11d48; font-size: 16px; font-weight: 800; margin-bottom: 10px; }
     .details-box { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin: 25px 0; }
     .details-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #e2e8f0; }
     .details-row:last-child { border-bottom: none; }
     .details-label { color: #64748b; font-size: 14px; font-weight: 600; }
     .details-value { color: #0f172a; font-size: 14px; font-weight: 700; text-align: right; }
-    .cta-container { text-align: center; margin: 35px 0; }
+    .cta-container { text-align: center; margin: 30px 0 15px 0; }
     .btn { display: inline-block; background-color: #E50914; color: #ffffff !important; font-size: 18px; font-weight: 700; padding: 16px 36px; border-radius: 12px; text-decoration: none; box-shadow: 0 4px 14px rgba(229, 9, 20, 0.35); }
+    .btn-wa { display: inline-block; background-color: #16a34a; color: #ffffff !important; font-size: 16px; font-weight: 700; padding: 14px 28px; border-radius: 12px; text-decoration: none; margin-top: 10px; }
     .footer { background-color: #0b0f19; padding: 30px; text-align: center; color: #94a3b8; font-size: 14px; }
     .footer p { color: #94a3b8; font-size: 13px; margin: 5px 0; }
   </style>
@@ -81,6 +86,15 @@ export function buildWelcomeEmailHtml(data: WelcomeEmailData): string {
       <h1>Hi ${data.studentName},</h1>
       <p>Your enrollment in the <strong>${data.courseName}</strong> has been successfully confirmed.</p>
       
+      <div class="account-box">
+        <div class="account-title">🎉 Your account has been created in the app!</div>
+        <p style="margin: 0; font-size: 14px; color: #475569;">You can sign in now with your registered email and password:</p>
+        <div style="margin-top: 12px; font-family: monospace; font-size: 15px; font-weight: 700; color: #0f172a;">
+          <div>Email: <strong>${data.studentEmail}</strong></div>
+          <div style="margin-top: 4px;">Password: <strong style="color: #E50914;">${admissionNum}</strong></div>
+        </div>
+      </div>
+
       <div class="details-box">
         <div class="details-row">
           <span class="details-label">Admission Number</span>
@@ -104,13 +118,14 @@ export function buildWelcomeEmailHtml(data: WelcomeEmailData): string {
         </div>
       </div>
 
-      <p>You can start your Speaking Challenge immediately using the link below:</p>
-
       <div class="cta-container">
-        <a href="${practiceUrl}" target="_blank" class="btn">Start Speaking Challenge →</a>
+        <a href="${practiceUrl}" target="_blank" class="btn">Sign In to Practice Web App →</a>
+        <div style="margin-top: 15px;">
+          <a href="${whatsappUrl}" target="_blank" class="btn-wa">💬 Message Us on WhatsApp</a>
+        </div>
       </div>
 
-      <p style="font-size: 14px; color: #64748b;">Keep this email for future reference. If you have any questions, our support team is here to help.</p>
+      <p style="font-size: 14px; color: #64748b; margin-top: 25px;">Keep this email for future reference. If you need assistance, our support team is available on WhatsApp.</p>
     </div>
     <div class="footer">
       <p><strong>Mastered Language Coach</strong></p>
