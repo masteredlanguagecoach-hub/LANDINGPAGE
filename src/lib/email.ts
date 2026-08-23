@@ -6,6 +6,7 @@ export interface WelcomeEmailData {
   courseName: string;
   whatsappNumber: string;
   paymentId: string;
+  admissionNumber?: string;
 }
 
 /**
@@ -39,6 +40,7 @@ function createTransporter() {
 export function buildWelcomeEmailHtml(data: WelcomeEmailData): string {
   const practiceUrl = process.env.PRACTICE_WEBAPP_URL || 'https://practice.masteredlanguagecoach.com';
   const logoUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/logo.png`;
+  const admissionNum = data.admissionNumber || 'MLC786';
 
   return `
 <!DOCTYPE html>
@@ -81,6 +83,10 @@ export function buildWelcomeEmailHtml(data: WelcomeEmailData): string {
       
       <div class="details-box">
         <div class="details-row">
+          <span class="details-label">Admission Number</span>
+          <span class="details-value" style="color: #E50914; font-weight: 800;">${admissionNum}</span>
+        </div>
+        <div class="details-row">
           <span class="details-label">Course Enrolled</span>
           <span class="details-value">${data.courseName}</span>
         </div>
@@ -122,13 +128,13 @@ export function buildWelcomeEmailHtml(data: WelcomeEmailData): string {
  */
 export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<{ success: boolean; error?: string }> {
   const from = process.env.EMAIL_FROM || '"Mastered Language Coach" <support@masteredlanguagecoach.com>';
-  const subject = 'Welcome to Mastered Language Coach Speaking Challenge';
+  const subject = `Welcome to Mastered Language Coach - Admission No: ${data.admissionNumber || 'MLC786'}`;
   const html = buildWelcomeEmailHtml(data);
 
   const transporter = createTransporter();
 
   if (!transporter) {
-    console.log('[Email Simulation] Welcome email generated successfully for:', data.studentEmail);
+    console.log('[Email Simulation] Welcome email generated for:', data.studentEmail, 'Admission No:', data.admissionNumber || 'MLC786');
     console.log('[Email Simulation] Target URL:', process.env.PRACTICE_WEBAPP_URL);
     return { success: true };
   }

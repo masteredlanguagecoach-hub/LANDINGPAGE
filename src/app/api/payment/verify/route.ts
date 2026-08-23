@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyRazorpaySignature } from '@/lib/razorpay';
 import { getCourseById } from '@/lib/courses';
-import { appendPaidStudentRow, appendPaymentLogRow, updateEmailDeliveryStatus } from '@/lib/sheets';
+import { appendPaidStudentRow, appendPaymentLogRow, getNextAdmissionNumber } from '@/lib/sheets';
 import { sendWelcomeEmail } from '@/lib/email';
 import { PaidStudentRow, PaymentLogRow } from '@/types';
 
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       // Log suspicious failed attempt to PAYMENT_LOGS
       await appendPaymentLogRow({
         timestamp: new Date().toISOString(),
-        internalEnrollmentId: `FAILED_${Date.now()}`,
+        admissionNumber: `FAILED_${Date.now()}`,
         razorpayOrderId: razorpay_order_id,
         razorpayPaymentId: razorpay_payment_id,
         course: courseId,
@@ -68,17 +68,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 4. Generate Unique Internal Enrollment ID
-    const enrollmentId = `MLC-${course.id}-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`;
+    // 4. Generate Admission Number Starting from MLC786 (MLC786, MLC787, ...)
+    const admissionNumber = await getNextAdmissionNumber();
     const nowIso = new Date().toISOString();
 
-    // 5. Attempt Email Delivery
+    // 5. Attempt Welcome Email Delivery
     const emailResult = await sendWelcomeEmail({
       studentName: fullName.trim(),
       studentEmail: email.trim().toLowerCase(),
       courseName: course.name,
       whatsappNumber: whatsappNumber.trim(),
       paymentId: razorpay_payment_id,
+      admissionNumber,
     });
 
     const emailStatus = emailResult.success ? 'SENT' : 'FAILED';
@@ -86,7 +87,8 @@ export async function POST(req: NextRequest) {
     // 6. Construct Paid Student Database Row
     const paidStudent: PaidStudentRow = {
       timestamp: nowIso,
-      enrollmentId,
+      admissionNumber,
+      enrollmentId: admissionNumber,
       fullName: fullName.trim(),
       email: email.trim().toLowerCase(),
       emailVerified: 'YES',
@@ -110,42 +112,46 @@ export async function POST(req: NextRequest) {
     // 8. Construct Transaction Log Row
     const paymentLog: PaymentLogRow = {
       timestamp: nowIso,
-      internalEnrollmentId: enrollmentId,
+      admissionNumber,
+      internalEnrollmentId: admissionNumber,
       razorpayOrderId: razorpay_order_id,
       razorpayPaymentId: razorpay_payment_id,
-      course: `${course.name} (${course.id})`,
+      course: course.id,
       amount: course.price,
       currency: course.currency,
       paymentStatus: 'SUCCESS',
-      signatureVerification: 'VERIFIED',
-      webhookStatus: 'CLIENT_CALLBACK',
+      signatureVerification: 'VERIFIED_HMAC_SHA256',
+      webhookStatus: 'PENDING_OR_DIRECT',
       email: email.trim().toLowerCase(),
       whatsappNumber: whatsappNumber.trim(),
-      notes: sheetsResult.duplicate ? 'Duplicate callback ignored safely' : 'Initial verified payment append',
+      notes: sheetsResult.duplicate
+        ? 'Duplicate payment verification request ignored.'
+        : 'Payment verified successfully and student row appended.',
     };
 
     await appendPaymentLogRow(paymentLog);
 
-    // Mask Payment ID for safe UI display (e.g., pay_N1x***987)
+    // Mask Payment ID for security display (e.g. pay_N1x***8491)
     const maskedPaymentId =
       razorpay_payment_id.length > 8
-        ? `${razorpay_payment_id.substring(0, 6)}***${razorpay_payment_id.substring(razorpay_payment_id.length - 4)}`
+        ? `${razorpay_payment_id.slice(0, 5)}***${razorpay_payment_id.slice(-4)}`
         : razorpay_payment_id;
 
     return NextResponse.json({
       success: true,
-      enrollmentId,
+      admissionNumber,
+      enrollmentId: admissionNumber,
       maskedPaymentId,
       fullPaymentId: razorpay_payment_id,
       courseName: course.name,
       registeredEmail: email.trim().toLowerCase(),
       emailDeliveryStatus: emailStatus,
-      message: 'Payment verified and enrollment confirmed!',
+      message: 'Payment verified successfully. Welcome to Mastered Language Coach!',
     });
   } catch (error: any) {
     console.error('[API /api/payment/verify] Error:', error);
     return NextResponse.json(
-      { success: false, message: 'Server verification failed. Please contact support.' },
+      { success: false, message: 'Internal server error during payment verification.' },
       { status: 500 }
     );
   }

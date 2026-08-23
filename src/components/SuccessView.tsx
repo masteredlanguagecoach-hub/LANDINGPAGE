@@ -14,7 +14,8 @@ import {
 
 interface SuccessViewProps {
   data: {
-    enrollmentId: string;
+    admissionNumber?: string;
+    enrollmentId?: string;
     maskedPaymentId: string;
     fullPaymentId?: string;
     courseName: string;
@@ -28,6 +29,8 @@ export default function SuccessView({ data }: SuccessViewProps) {
   const [isResending, setIsResending] = useState(false);
   const [resendStatus, setResendStatus] = useState<{ text: string; isError: boolean } | null>(null);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
+
+  const admissionNum = data.admissionNumber || data.enrollmentId || 'MLC786';
 
   // Practice Web App Link from env or default
   const practiceUrl = process.env.NEXT_PUBLIC_PRACTICE_WEBAPP_URL || 'https://practice.masteredlanguagecoach.com';
@@ -57,6 +60,7 @@ export default function SuccessView({ data }: SuccessViewProps) {
           fullName: 'Valued Student',
           courseName: data.courseName,
           whatsappNumber: data.whatsappNumber || '',
+          admissionNumber: admissionNum,
         }),
       });
 
@@ -138,6 +142,9 @@ export default function SuccessView({ data }: SuccessViewProps) {
           </h3>
 
           <div className="grid grid-cols-2 gap-2 text-sm">
+            <span className="text-slate-500 font-semibold">Admission Number:</span>
+            <span className="text-brand-600 font-mono font-black text-right">{admissionNum}</span>
+
             <span className="text-slate-500 font-semibold">Course Enrolled:</span>
             <span className="text-slate-950 font-extrabold text-right">{data.courseName}</span>
 
@@ -148,9 +155,6 @@ export default function SuccessView({ data }: SuccessViewProps) {
 
             <span className="text-slate-500 font-semibold">Payment Reference:</span>
             <span className="text-slate-950 font-mono font-bold text-right">{data.maskedPaymentId}</span>
-
-            <span className="text-slate-500 font-semibold">Enrollment ID:</span>
-            <span className="text-slate-950 font-mono font-bold text-right">{data.enrollmentId}</span>
           </div>
         </div>
 

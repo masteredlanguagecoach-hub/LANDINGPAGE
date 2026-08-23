@@ -9,7 +9,7 @@ function SuccessContent() {
   const searchParams = useSearchParams();
 
   const mockData = {
-    enrollmentId: searchParams?.get('enrollmentId') || 'MLC-ML-EN-894102',
+    admissionNumber: searchParams?.get('admissionNumber') || searchParams?.get('enrollmentId') || 'MLC786',
     maskedPaymentId: searchParams?.get('paymentId') || 'pay_N1x***8491',
     fullPaymentId: searchParams?.get('paymentId') || 'pay_N1x8491',
     courseName: searchParams?.get('course') || 'Malayalam to English Speaking Challenge',

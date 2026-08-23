@@ -10,7 +10,6 @@ const inMemoryPaymentLogs: PaymentLogRow[] = [];
 /**
  * Initializes authenticated Google Sheets API client using Service Account credentials.
  */
-
 function getGoogleSheetsClient() {
   const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
   let privateKey = process.env.GOOGLE_PRIVATE_KEY;
@@ -36,7 +35,7 @@ export const PAYMENT_LOGS_SHEET = 'PAYMENT_LOGS';
 
 export const PAID_STUDENTS_HEADERS = [
   'Timestamp',
-  'Enrollment ID',
+  'Admission Number',
   'Full Name',
   'Email',
   'Email Verified',
@@ -56,7 +55,7 @@ export const PAID_STUDENTS_HEADERS = [
 
 export const PAYMENT_LOGS_HEADERS = [
   'Timestamp',
-  'Internal Enrollment ID',
+  'Admission Number',
   'Razorpay Order ID',
   'Razorpay Payment ID',
   'Course',
@@ -69,6 +68,37 @@ export const PAYMENT_LOGS_HEADERS = [
   'WhatsApp Number',
   'Notes',
 ];
+
+/**
+ * Generates sequential Admission Number starting from MLC786 (MLC786, MLC787, MLC788, ...).
+ */
+export async function getNextAdmissionNumber(): Promise<string> {
+  const STARTING_NO = 786;
+  const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+  const sheets = getGoogleSheetsClient();
+
+  if (!sheets || !spreadsheetId || spreadsheetId.includes('PLACEHOLDER')) {
+    const nextNum = STARTING_NO + inMemoryPaidStudents.length;
+    return `MLC${nextNum}`;
+  }
+
+  try {
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `${PAID_STUDENTS_SHEET}!A:B`,
+    });
+
+    const rows = res.data.values;
+    // Header is row 0; count of existing students = rows.length - 1
+    const studentCount = rows && rows.length > 1 ? rows.length - 1 : 0;
+    const nextNum = STARTING_NO + studentCount;
+    return `MLC${nextNum}`;
+  } catch (error) {
+    console.warn('[GoogleSheets] Failed to fetch row count for Admission Number, using fallback count:', error);
+    const nextNum = STARTING_NO + inMemoryPaidStudents.length;
+    return `MLC${nextNum}`;
+  }
+}
 
 /**
  * Ensures header row exists on sheet worksheets.
@@ -91,7 +121,6 @@ async function ensureSheetHeaders(sheets: any, spreadsheetId: string, sheetName:
       });
     }
   } catch (error: any) {
-    // Sheet might not exist yet; try creating worksheet tab
     try {
       await sheets.spreadsheets.batchUpdate({
         spreadsheetId,
@@ -121,14 +150,12 @@ async function ensureSheetHeaders(sheets: any, spreadsheetId: string, sheetName:
 
 /**
  * Checks if a Razorpay Payment ID or Order ID already exists in PAID_STUDENTS sheet.
- * Protects against duplicate callbacks, webhooks, or page refreshes.
  */
 export async function isPaymentAlreadyProcessed(paymentId: string, orderId: string): Promise<boolean> {
   const spreadsheetId = process.env.GOOGLE_SHEET_ID;
   const sheets = getGoogleSheetsClient();
 
   if (!sheets || !spreadsheetId || spreadsheetId.includes('PLACEHOLDER')) {
-    // Check in-memory store
     return inMemoryPaidStudents.some(
       (s) => s.razorpayPaymentId === paymentId || (orderId && s.razorpayOrderId === orderId)
     );
@@ -165,17 +192,14 @@ export async function isPaymentAlreadyProcessed(paymentId: string, orderId: stri
 
 /**
  * Appends a verified paid student record to Google Sheets (PAID_STUDENTS worksheet).
- * Uses header-based column mapping.
  */
 export async function appendPaidStudentRow(student: PaidStudentRow): Promise<{ success: boolean; duplicate: boolean }> {
-  // 1. Idempotency Check
   const alreadyProcessed = await isPaymentAlreadyProcessed(student.razorpayPaymentId, student.razorpayOrderId);
   if (alreadyProcessed) {
-    console.log(`[GoogleSheets] Payment ${student.razorpayPaymentId} / ${student.razorpayOrderId} already recorded. Skipping duplicate.`);
+    console.log(`[GoogleSheets] Payment ${student.razorpayPaymentId} already recorded. Skipping duplicate.`);
     return { success: true, duplicate: true };
   }
 
-  // 2. Save in-memory store
   inMemoryPaidStudents.push(student);
 
   const spreadsheetId = process.env.GOOGLE_SHEET_ID;
@@ -189,10 +213,11 @@ export async function appendPaidStudentRow(student: PaidStudentRow): Promise<{ s
   try {
     await ensureSheetHeaders(sheets, spreadsheetId, PAID_STUDENTS_SHEET, PAID_STUDENTS_HEADERS);
 
-    // Map object properties according to PAID_STUDENTS_HEADERS
+    const admissionNum = student.admissionNumber || student.enrollmentId || 'MLC786';
+
     const rowValues = [
       student.timestamp,
-      student.enrollmentId,
+      admissionNum,
       student.fullName,
       student.email,
       student.emailVerified,
@@ -244,9 +269,11 @@ export async function appendPaymentLogRow(log: PaymentLogRow): Promise<boolean> 
   try {
     await ensureSheetHeaders(sheets, spreadsheetId, PAYMENT_LOGS_SHEET, PAYMENT_LOGS_HEADERS);
 
+    const admissionNum = log.admissionNumber || log.internalEnrollmentId || 'MLC786';
+
     const rowValues = [
       log.timestamp,
-      log.internalEnrollmentId,
+      admissionNum,
       log.razorpayOrderId,
       log.razorpayPaymentId,
       log.course,
@@ -310,7 +337,7 @@ export async function updateEmailDeliveryStatus(paymentId: string, newStatus: 'S
 
     for (let i = 1; i < rows.length; i++) {
       if (rows[i][paymentIdIdx] === paymentId) {
-        const colLetter = String.fromCharCode(65 + statusIdx); // Convert 0-index to col letter
+        const colLetter = String.fromCharCode(65 + statusIdx);
         const cellRange = `${PAID_STUDENTS_SHEET}!${colLetter}${i + 1}`;
 
         await sheets.spreadsheets.values.update({

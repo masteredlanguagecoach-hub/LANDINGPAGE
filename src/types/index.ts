@@ -3,7 +3,7 @@ export interface Course {
   name: string; // e.g. "Malayalam to English Speaking Challenge"
   displayLanguage: string; // "Malayalam → English"
   description: string;
-  price: number; // In INR (e.g. 499)
+  price: number; // In INR (e.g. 5)
   currency: string; // "INR"
   badge?: string;
   popular?: boolean;
@@ -43,7 +43,8 @@ export interface VerifyPaymentRequest {
 
 export interface PaidStudentRow {
   timestamp: string;
-  enrollmentId: string;
+  admissionNumber: string; // e.g. "MLC786"
+  enrollmentId?: string; // Legacy alias for backward compatibility
   fullName: string;
   email: string;
   emailVerified: string; // "YES"
@@ -63,7 +64,8 @@ export interface PaidStudentRow {
 
 export interface PaymentLogRow {
   timestamp: string;
-  internalEnrollmentId: string;
+  admissionNumber: string; // e.g. "MLC786"
+  internalEnrollmentId?: string; // Legacy alias
   razorpayOrderId: string;
   razorpayPaymentId: string;
   course: string;
