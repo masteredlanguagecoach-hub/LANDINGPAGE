@@ -3,9 +3,9 @@ import { PaidStudentRow, PaymentLogRow } from '@/types';
 
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
-// Default Spreadsheet ID & Apps Script Web App URL fallbacks
+// Default Spreadsheet ID & User's Deployed Apps Script Web App URL fallbacks
 const DEFAULT_SPREADSHEET_ID = '1hveaz4UjoT2odS6YRpB8BNeaFhmpqVEYIRAHCInNzTU';
-const DEFAULT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzOKO05chNfJPD65-gHSLQ8y-Mv1GOTalpsTwGfUqmWy-jpI9rx01nibRSppYy22UwL/exec';
+const DEFAULT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwD5wZIPiI2HqsbQUpPfPYLM8sZwNa0O8RIYSiIj5O-YNbKqP916Hv8YVTZQKEhs_a4Dg/exec';
 
 export function getSpreadsheetId(): string {
   return process.env.GOOGLE_SHEET_ID || DEFAULT_SPREADSHEET_ID;
@@ -95,7 +95,7 @@ async function sendToAppsScript(action: string, payload: any): Promise<boolean> 
       headers: { 'Content-Type': 'application/json' },
       body: postBody,
     });
-    console.log(`[AppsScript WebApp] Sent ${action} to Google Apps Script: status ${res.status}`);
+    console.log(`[AppsScript WebApp] Sent ${action} to Google Apps Script URL: status ${res.status}`);
     return res.ok;
   } catch (err) {
     console.warn('[AppsScript WebApp] Failed to send payload to Google Apps Script URL:', err);
