@@ -2,8 +2,9 @@ import crypto from 'node:crypto';
 import Razorpay from 'razorpay';
 import { getCoursePrice } from './courses';
 
-const DEFAULT_KEY_ID = 'rzp_test_TSuqR2TgA89zRU';
-const DEFAULT_KEY_SECRET = 'ieFRCrvdfVL2FyRoeogViDBm';
+// Live Razorpay Default Credentials Fallback
+const DEFAULT_KEY_ID = 'rzp_live_TTCDG5XNdaQZY9';
+const DEFAULT_KEY_SECRET = 'mfG6jptH4dv4i8vywvh5Wm6t';
 
 // Initialize Razorpay instance lazily or with fallbacks
 export function getRazorpayClient(): Razorpay {
