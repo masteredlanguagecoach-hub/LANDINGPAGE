@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyWebhookSignature } from '@/lib/razorpay';
-import { appendPaidStudentRow, appendPaymentLogRow, isPaymentAlreadyProcessed } from '@/lib/sheets';
+import { appendPaidStudentRow, appendPaymentLogRow, isPaymentAlreadyProcessed, getNextAdmissionNumber } from '@/lib/sheets';
 import { getCourseById } from '@/lib/courses';
 import { sendWelcomeEmail } from '@/lib/email';
 import { PaidStudentRow, PaymentLogRow } from '@/types';
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
         const course = getCourseById(courseId);
         if (course) {
           const nowIso = new Date().toISOString();
-          const enrollmentId = `MLC-${course.id}-${Date.now().toString().slice(-6)}`;
+          const admissionNumber = await getNextAdmissionNumber();
 
           // Dispatch email if not already sent
           const emailRes = await sendWelcomeEmail({
@@ -56,11 +56,13 @@ export async function POST(req: NextRequest) {
             courseName: course.name,
             whatsappNumber: whatsappNumber || '',
             paymentId,
+            admissionNumber,
           });
 
           const paidStudent: PaidStudentRow = {
             timestamp: nowIso,
-            enrollmentId,
+            admissionNumber,
+            enrollmentId: admissionNumber,
             fullName: fullName || 'Valued Student',
             email: email || '',
             emailVerified: 'YES',
@@ -82,7 +84,8 @@ export async function POST(req: NextRequest) {
 
           const paymentLog: PaymentLogRow = {
             timestamp: nowIso,
-            internalEnrollmentId: enrollmentId,
+            admissionNumber,
+            internalEnrollmentId: admissionNumber,
             razorpayOrderId: orderId || '',
             razorpayPaymentId: paymentId,
             course: course.name,
@@ -101,9 +104,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true, received: true });
+    return NextResponse.json({ success: true, message: 'Webhook processed successfully' });
   } catch (error: any) {
     console.error('[API /api/razorpay/webhook] Error:', error);
-    return NextResponse.json({ success: false, message: 'Webhook processing error' }, { status: 500 });
+    return NextResponse.json({ success: false, message: 'Webhook handler error' }, { status: 500 });
   }
 }
