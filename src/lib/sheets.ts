@@ -83,7 +83,7 @@ export const PAYMENT_LOGS_HEADERS = [
 
 /**
  * Sends student registration payload to Google Apps Script Web App URL.
- * Appends URL parameters and uses redirect: follow to support Google Apps Script 302 redirects cleanly.
+ * Uses await, query parameters, and redirect: follow so Vercel serverless doesn't freeze the request.
  */
 async function sendToAppsScript(action: string, payload: any): Promise<boolean> {
   const scriptUrl = getAppsScriptUrl();
@@ -108,7 +108,9 @@ async function sendToAppsScript(action: string, payload: any): Promise<boolean> 
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: postBody,
       redirect: 'follow',
+      cache: 'no-store',
     });
+
     console.log(`[AppsScript WebApp] Sent ${action} to Google Apps Script URL: status ${res.status}`);
     return res.ok;
   } catch (err) {
@@ -250,8 +252,8 @@ export async function appendPaidStudentRow(student: PaidStudentRow): Promise<{ s
 
   inMemoryPaidStudents.push(student);
 
-  // Send payload to Google Apps Script Web App URL asynchronously
-  sendToAppsScript('addPaidStudent', student);
+  // Await payload delivery to Google Apps Script Web App URL so Vercel serverless context doesn't terminate early
+  await sendToAppsScript('addPaidStudent', student);
 
   const spreadsheetId = getSpreadsheetId();
   const sheets = getGoogleSheetsClient();
@@ -309,8 +311,8 @@ export async function appendPaidStudentRow(student: PaidStudentRow): Promise<{ s
 export async function appendPaymentLogRow(log: PaymentLogRow): Promise<boolean> {
   inMemoryPaymentLogs.push(log);
 
-  // Send to Apps Script Web App URL
-  sendToAppsScript('addPaymentLog', log);
+  // Await payload delivery to Google Apps Script Web App URL
+  await sendToAppsScript('addPaymentLog', log);
 
   const spreadsheetId = getSpreadsheetId();
   const sheets = getGoogleSheetsClient();
@@ -367,7 +369,7 @@ export async function updateEmailDeliveryStatus(paymentId: string, newStatus: 'S
     student.emailDeliveryStatus = newStatus;
   }
 
-  sendToAppsScript('updateEmailStatus', { paymentId, newStatus });
+  await sendToAppsScript('updateEmailStatus', { paymentId, newStatus });
 
   const spreadsheetId = getSpreadsheetId();
   const sheets = getGoogleSheetsClient();
