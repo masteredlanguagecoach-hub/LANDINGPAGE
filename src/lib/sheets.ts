@@ -3,6 +3,13 @@ import { PaidStudentRow, PaymentLogRow } from '@/types';
 
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
+// Default Spreadsheet ID fallback
+const DEFAULT_SPREADSHEET_ID = '1hveaz4UjoT2odS6YRpB8BNeaFhmpqVEYIRAHCInNzTU';
+
+export function getSpreadsheetId(): string {
+  return process.env.GOOGLE_SHEET_ID || DEFAULT_SPREADSHEET_ID;
+}
+
 // Local in-memory fallback log when Google Sheets API credentials are not yet configured
 const inMemoryPaidStudents: PaidStudentRow[] = [];
 const inMemoryPaymentLogs: PaymentLogRow[] = [];
@@ -74,10 +81,10 @@ export const PAYMENT_LOGS_HEADERS = [
  */
 export async function getNextAdmissionNumber(): Promise<string> {
   const STARTING_NO = 786;
-  const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+  const spreadsheetId = getSpreadsheetId();
   const sheets = getGoogleSheetsClient();
 
-  if (!sheets || !spreadsheetId || spreadsheetId.includes('PLACEHOLDER')) {
+  if (!sheets || !spreadsheetId) {
     const nextNum = STARTING_NO + inMemoryPaidStudents.length;
     return `MLC${nextNum}`;
   }
@@ -152,10 +159,10 @@ async function ensureSheetHeaders(sheets: any, spreadsheetId: string, sheetName:
  * Checks if a Razorpay Payment ID or Order ID already exists in PAID_STUDENTS sheet.
  */
 export async function isPaymentAlreadyProcessed(paymentId: string, orderId: string): Promise<boolean> {
-  const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+  const spreadsheetId = getSpreadsheetId();
   const sheets = getGoogleSheetsClient();
 
-  if (!sheets || !spreadsheetId || spreadsheetId.includes('PLACEHOLDER')) {
+  if (!sheets || !spreadsheetId) {
     return inMemoryPaidStudents.some(
       (s) => s.razorpayPaymentId === paymentId || (orderId && s.razorpayOrderId === orderId)
     );
@@ -202,10 +209,10 @@ export async function appendPaidStudentRow(student: PaidStudentRow): Promise<{ s
 
   inMemoryPaidStudents.push(student);
 
-  const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+  const spreadsheetId = getSpreadsheetId();
   const sheets = getGoogleSheetsClient();
 
-  if (!sheets || !spreadsheetId || spreadsheetId.includes('PLACEHOLDER')) {
+  if (!sheets || !spreadsheetId) {
     console.log('[GoogleSheets Fallback] Recorded Paid Student:', student);
     return { success: true, duplicate: false };
   }
@@ -258,10 +265,10 @@ export async function appendPaidStudentRow(student: PaidStudentRow): Promise<{ s
 export async function appendPaymentLogRow(log: PaymentLogRow): Promise<boolean> {
   inMemoryPaymentLogs.push(log);
 
-  const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+  const spreadsheetId = getSpreadsheetId();
   const sheets = getGoogleSheetsClient();
 
-  if (!sheets || !spreadsheetId || spreadsheetId.includes('PLACEHOLDER')) {
+  if (!sheets || !spreadsheetId) {
     console.log('[GoogleSheets Fallback] Recorded Payment Log:', log);
     return true;
   }
@@ -313,10 +320,10 @@ export async function updateEmailDeliveryStatus(paymentId: string, newStatus: 'S
     student.emailDeliveryStatus = newStatus;
   }
 
-  const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+  const spreadsheetId = getSpreadsheetId();
   const sheets = getGoogleSheetsClient();
 
-  if (!sheets || !spreadsheetId || spreadsheetId.includes('PLACEHOLDER')) {
+  if (!sheets || !spreadsheetId) {
     return true;
   }
 
