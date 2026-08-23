@@ -83,17 +83,31 @@ export const PAYMENT_LOGS_HEADERS = [
 
 /**
  * Sends student registration payload to Google Apps Script Web App URL.
+ * Appends URL parameters and uses redirect: follow to support Google Apps Script 302 redirects cleanly.
  */
 async function sendToAppsScript(action: string, payload: any): Promise<boolean> {
   const scriptUrl = getAppsScriptUrl();
   if (!scriptUrl) return false;
 
   try {
+    const params = new URLSearchParams();
+    params.append('action', action);
+    if (payload && typeof payload === 'object') {
+      Object.keys(payload).forEach((k) => {
+        if (payload[k] !== undefined && payload[k] !== null) {
+          params.append(k, String(payload[k]));
+        }
+      });
+    }
+
+    const fullUrl = `${scriptUrl}?${params.toString()}`;
     const postBody = JSON.stringify({ action, payload, ...payload });
-    const res = await fetch(scriptUrl, {
+
+    const res = await fetch(fullUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: postBody,
+      redirect: 'follow',
     });
     console.log(`[AppsScript WebApp] Sent ${action} to Google Apps Script URL: status ${res.status}`);
     return res.ok;
