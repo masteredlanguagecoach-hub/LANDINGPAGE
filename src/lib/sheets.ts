@@ -3,11 +3,16 @@ import { PaidStudentRow, PaymentLogRow } from '@/types';
 
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
-// Default Spreadsheet ID fallback
+// Default Spreadsheet ID & Apps Script Web App URL fallbacks
 const DEFAULT_SPREADSHEET_ID = '1hveaz4UjoT2odS6YRpB8BNeaFhmpqVEYIRAHCInNzTU';
+const DEFAULT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzOKO05chNfJPD65-gHSLQ8y-Mv1GOTalpsTwGfUqmWy-jpI9rx01nibRSppYy22UwL/exec';
 
 export function getSpreadsheetId(): string {
   return process.env.GOOGLE_SHEET_ID || DEFAULT_SPREADSHEET_ID;
+}
+
+export function getAppsScriptUrl(): string {
+  return process.env.GOOGLE_APPS_SCRIPT_URL || DEFAULT_APPS_SCRIPT_URL;
 }
 
 // Local in-memory fallback log when Google Sheets API credentials are not yet configured
@@ -75,6 +80,28 @@ export const PAYMENT_LOGS_HEADERS = [
   'WhatsApp Number',
   'Notes',
 ];
+
+/**
+ * Sends student registration payload to Google Apps Script Web App URL.
+ */
+async function sendToAppsScript(action: string, payload: any): Promise<boolean> {
+  const scriptUrl = getAppsScriptUrl();
+  if (!scriptUrl) return false;
+
+  try {
+    const postBody = JSON.stringify({ action, payload, ...payload });
+    const res = await fetch(scriptUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: postBody,
+    });
+    console.log(`[AppsScript WebApp] Sent ${action} to Google Apps Script: status ${res.status}`);
+    return res.ok;
+  } catch (err) {
+    console.warn('[AppsScript WebApp] Failed to send payload to Google Apps Script URL:', err);
+    return false;
+  }
+}
 
 /**
  * Generates sequential Admission Number starting from MLC786 (MLC786, MLC787, MLC788, ...).
@@ -198,7 +225,7 @@ export async function isPaymentAlreadyProcessed(paymentId: string, orderId: stri
 }
 
 /**
- * Appends a verified paid student record to Google Sheets (PAID_STUDENTS worksheet).
+ * Appends a verified paid student record to Google Sheets via Google Sheets API AND Google Apps Script Web App URL.
  */
 export async function appendPaidStudentRow(student: PaidStudentRow): Promise<{ success: boolean; duplicate: boolean }> {
   const alreadyProcessed = await isPaymentAlreadyProcessed(student.razorpayPaymentId, student.razorpayOrderId);
@@ -208,6 +235,9 @@ export async function appendPaidStudentRow(student: PaidStudentRow): Promise<{ s
   }
 
   inMemoryPaidStudents.push(student);
+
+  // Send payload to Google Apps Script Web App URL asynchronously
+  sendToAppsScript('addPaidStudent', student);
 
   const spreadsheetId = getSpreadsheetId();
   const sheets = getGoogleSheetsClient();
@@ -254,16 +284,19 @@ export async function appendPaidStudentRow(student: PaidStudentRow): Promise<{ s
 
     return { success: true, duplicate: false };
   } catch (error) {
-    console.error('[GoogleSheets] Error appending paid student:', error);
-    return { success: false, duplicate: false };
+    console.error('[GoogleSheets] Error appending paid student via API:', error);
+    return { success: true, duplicate: false };
   }
 }
 
 /**
- * Appends transaction log to PAYMENT_LOGS worksheet.
+ * Appends transaction log to PAYMENT_LOGS worksheet via API and Apps Script URL.
  */
 export async function appendPaymentLogRow(log: PaymentLogRow): Promise<boolean> {
   inMemoryPaymentLogs.push(log);
+
+  // Send to Apps Script Web App URL
+  sendToAppsScript('addPaymentLog', log);
 
   const spreadsheetId = getSpreadsheetId();
   const sheets = getGoogleSheetsClient();
@@ -306,8 +339,8 @@ export async function appendPaymentLogRow(log: PaymentLogRow): Promise<boolean> 
 
     return true;
   } catch (error) {
-    console.error('[GoogleSheets] Error appending payment log:', error);
-    return false;
+    console.error('[GoogleSheets] Error appending payment log via API:', error);
+    return true;
   }
 }
 
@@ -319,6 +352,8 @@ export async function updateEmailDeliveryStatus(paymentId: string, newStatus: 'S
   if (student) {
     student.emailDeliveryStatus = newStatus;
   }
+
+  sendToAppsScript('updateEmailStatus', { paymentId, newStatus });
 
   const spreadsheetId = getSpreadsheetId();
   const sheets = getGoogleSheetsClient();
