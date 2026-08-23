@@ -38,7 +38,7 @@ function createTransporter() {
  * Generates responsive, high-converting HTML welcome email.
  */
 export function buildWelcomeEmailHtml(data: WelcomeEmailData): string {
-  const practiceUrl = process.env.PRACTICE_WEBAPP_URL || 'https://practice.masteredlanguagecoach.com';
+  const practiceUrl = process.env.PRACTICE_WEBAPP_URL || process.env.NEXT_PUBLIC_PRACTICE_WEBAPP_URL || 'https://mastered-module-web.vercel.app/';
   const logoUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/logo.png`;
   const admissionNum = data.admissionNumber || 'MLC786';
   const supportWhatsapp = (process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP_NUMBER || '919876543210').replace(/\D/g, '');
@@ -119,7 +119,7 @@ export function buildWelcomeEmailHtml(data: WelcomeEmailData): string {
       </div>
 
       <div class="cta-container">
-        <a href="${practiceUrl}" target="_blank" class="btn">Sign In to Practice Web App →</a>
+        <a href="${practiceUrl}" target="_blank" class="btn">Start Journey →</a>
         <div style="margin-top: 15px;">
           <a href="${whatsappUrl}" target="_blank" class="btn-wa">💬 Message Us on WhatsApp</a>
         </div>

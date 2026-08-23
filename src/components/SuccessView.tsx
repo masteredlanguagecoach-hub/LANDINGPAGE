@@ -36,7 +36,7 @@ export default function SuccessView({ data }: SuccessViewProps) {
   const admissionNum = data.admissionNumber || data.enrollmentId || 'MLC786';
 
   // Practice Web App & Support WhatsApp Links
-  const practiceUrl = process.env.NEXT_PUBLIC_PRACTICE_WEBAPP_URL || 'https://practice.masteredlanguagecoach.com';
+  const practiceUrl = process.env.NEXT_PUBLIC_PRACTICE_WEBAPP_URL || process.env.PRACTICE_WEBAPP_URL || 'https://mastered-module-web.vercel.app/';
   const supportWhatsapp = (process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP_NUMBER || '919876543210').replace(/\D/g, '');
 
   const whatsappMessage = encodeURIComponent(
@@ -179,16 +179,16 @@ export default function SuccessView({ data }: SuccessViewProps) {
           </div>
         </div>
 
-        {/* Action Buttons: Sign In App + WhatsApp Message */}
+        {/* Action Buttons: Start Journey + WhatsApp Message */}
         <div className="space-y-3">
-          {/* Practice Web App Sign In Button */}
+          {/* Start Journey App Button */}
           <a
             href={practiceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full bg-brand-500 hover:bg-brand-600 active:bg-brand-700 text-white font-extrabold text-lg py-4 rounded-2xl shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-3 text-center cursor-pointer"
+            className="w-full bg-brand-500 hover:bg-brand-600 active:bg-brand-700 text-white font-extrabold text-lg py-4 sm:py-5 rounded-2xl shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-3 text-center cursor-pointer transform hover:-translate-y-0.5"
           >
-            <span>Sign In to Practice Web App</span>
+            <span>Start Journey</span>
             <ExternalLink className="w-5 h-5" />
           </a>
 
