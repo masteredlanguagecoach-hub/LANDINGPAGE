@@ -120,16 +120,14 @@ async function sendToAppsScript(action: string, payload: any): Promise<boolean> 
 }
 
 /**
- * Generates sequential Admission Number starting from MLC786 (MLC786, MLC787, MLC788, ...).
- * Queries Google Apps Script or Google Sheets API to read the exact row count.
+ * Generates sequential Admission Number by inspecting Column B of Google Sheets (PAID_STUDENTS).
+ * Finds the highest number used so far (e.g., MLC788) and returns the next (e.g., MLC789).
  */
 export async function getNextAdmissionNumber(): Promise<string> {
   const STARTING_NO = 786;
-  const spreadsheetId = getSpreadsheetId();
-  const sheets = getGoogleSheetsClient();
   const scriptUrl = getAppsScriptUrl();
 
-  // 1. Try Google Apps Script URL first if available
+  // 1. Try Google Apps Script URL first to scan Column B
   if (scriptUrl) {
     try {
       const res = await fetch(`${scriptUrl}?action=getNextAdmissionNumber`, {
@@ -138,6 +136,7 @@ export async function getNextAdmissionNumber(): Promise<string> {
       });
       const data = await res.json();
       if (data && data.admissionNumber) {
+        console.log(`[GoogleSheets] Received next Admission Number from Apps Script: ${data.admissionNumber}`);
         return data.admissionNumber;
       }
     } catch (err) {
@@ -146,17 +145,30 @@ export async function getNextAdmissionNumber(): Promise<string> {
   }
 
   // 2. Try Google Sheets API if credentials present
+  const spreadsheetId = getSpreadsheetId();
+  const sheets = getGoogleSheetsClient();
   if (sheets && spreadsheetId) {
     try {
       const res = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: `${PAID_STUDENTS_SHEET}!A:B`,
+        range: `${PAID_STUDENTS_SHEET}!B:B`,
       });
 
       const rows = res.data.values;
-      const studentCount = rows && rows.length > 1 ? rows.length - 1 : 0;
-      const nextNum = STARTING_NO + studentCount;
-      return `MLC${nextNum}`;
+      if (rows && rows.length > 1) {
+        let maxNum = STARTING_NO - 1; // 785
+        for (let i = 1; i < rows.length; i++) {
+          const val = String(rows[i][0] || '').trim();
+          const match = val.match(/MLC(\d+)/i);
+          if (match && match[1]) {
+            const num = parseInt(match[1], 10);
+            if (!isNaN(num) && num > maxNum) {
+              maxNum = num;
+            }
+          }
+        }
+        return `MLC${maxNum + 1}`;
+      }
     } catch (error) {
       console.warn('[GoogleSheets] Failed to fetch row count for Admission Number:', error);
     }
