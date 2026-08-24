@@ -59,7 +59,7 @@ export default function LandingPage() {
         courses={INITIAL_COURSES}
         selectedCourseId={selectedCourseId}
         onSelectCourse={(id) => setSelectedCourseId(id)}
-        onSuccess={handlePaymentSuccess}
+        onPaymentSuccess={handlePaymentSuccess}
       />
 
       {/* 8. Student Testimonials */}
