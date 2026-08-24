@@ -27,7 +27,7 @@ export default function AdminDataTable({ students, isLoading }: AdminDataTablePr
     );
   }
 
-  if (students.length === 0) {
+  if (!students || students.length === 0) {
     return (
       <div className="bg-[#111827] border border-slate-800 rounded-3xl p-12 text-center space-y-3">
         <p className="text-slate-300 font-bold text-lg">No student records found</p>
@@ -54,18 +54,31 @@ export default function AdminDataTable({ students, isLoading }: AdminDataTablePr
           </thead>
           <tbody className="divide-y divide-slate-800/60 font-medium">
             {students.map((student, idx) => {
-              const admissionNo = student.admissionNumber || `MLC${786 + idx}`;
-              const cleanWhatsApp = (student.whatsappNumber || '').replace(/\D/g, '');
+              const admissionNo = String(student.admissionNumber || `MLC${786 + idx}`);
+              const rawPhone = String(student.whatsappNumber || '');
+              const cleanWhatsApp = rawPhone.replace(/\D/g, '');
               const waLink = cleanWhatsApp ? `https://wa.me/${cleanWhatsApp}` : null;
-              const formattedDate = student.createdAt || student.timestamp
-                ? new Date(student.createdAt || student.timestamp).toLocaleString('en-IN', {
-                    day: '2-digit',
-                    month: 'short',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })
-                : '—';
+              
+              let formattedDate = '—';
+              try {
+                const dateVal = student.createdAt || student.timestamp;
+                if (dateVal) {
+                  const parsedDate = new Date(dateVal);
+                  if (!isNaN(parsedDate.getTime())) {
+                    formattedDate = parsedDate.toLocaleString('en-IN', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    });
+                  } else {
+                    formattedDate = String(dateVal);
+                  }
+                }
+              } catch (e) {
+                formattedDate = '—';
+              }
 
               return (
                 <tr key={student.razorpayPaymentId || idx} className="hover:bg-[#1F2937]/40 transition-colors">
@@ -92,11 +105,11 @@ export default function AdminDataTable({ students, isLoading }: AdminDataTablePr
                     <div className="space-y-0.5">
                       <div className="font-bold text-white flex items-center gap-1.5">
                         <User className="w-3.5 h-3.5 text-brand-400" />
-                        <span>{student.fullName || 'Anonymous Student'}</span>
+                        <span>{String(student.fullName || 'Anonymous Student')}</span>
                       </div>
                       <div className="text-xs text-slate-400 flex items-center gap-1.5">
                         <Mail className="w-3.5 h-3.5 text-slate-500" />
-                        <span>{student.email || '—'}</span>
+                        <span>{String(student.email || '—')}</span>
                       </div>
                     </div>
                   </td>
@@ -111,7 +124,7 @@ export default function AdminDataTable({ students, isLoading }: AdminDataTablePr
                         className="inline-flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
                       >
                         <MessageSquare className="w-3.5 h-3.5" />
-                        <span>{student.whatsappNumber}</span>
+                        <span>{rawPhone}</span>
                         <ExternalLink className="w-3 h-3 opacity-60" />
                       </a>
                     ) : (
@@ -133,9 +146,9 @@ export default function AdminDataTable({ students, isLoading }: AdminDataTablePr
                   <td className="px-6 py-4 whitespace-nowrap">
                     {student.razorpayPaymentId ? (
                       <div className="inline-flex items-center gap-1.5 font-mono text-xs text-slate-400 bg-slate-800/60 px-2.5 py-1 rounded-lg">
-                        <span>{student.razorpayPaymentId}</span>
+                        <span>{String(student.razorpayPaymentId)}</span>
                         <button
-                          onClick={() => handleCopy(student.razorpayPaymentId, `pay-${idx}`)}
+                          onClick={() => handleCopy(String(student.razorpayPaymentId), `pay-${idx}`)}
                           className="hover:text-white transition-colors cursor-pointer"
                         >
                           {copiedId === `pay-${idx}` ? (

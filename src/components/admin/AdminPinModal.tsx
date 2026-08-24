@@ -24,7 +24,7 @@ export default function AdminPinModal({ onVerify }: AdminPinModalProps) {
 
     const isValid = await onVerify(pin.trim());
     if (!isValid) {
-      setError('Invalid Admin PIN. Default PIN is 7860.');
+      setError('Invalid Admin PIN. Please try again.');
     }
     setIsSubmitting(false);
   };
@@ -54,7 +54,7 @@ export default function AdminPinModal({ onVerify }: AdminPinModalProps) {
               type="password"
               value={pin}
               onChange={(e) => setPin(e.target.value)}
-              placeholder="Enter PIN (Default: 7860)"
+              placeholder="Enter Admin PIN"
               className="w-full bg-[#1F2937] border border-slate-700 rounded-xl px-4 py-3.5 text-center text-2xl font-mono tracking-widest text-white placeholder:text-slate-500 placeholder:text-base placeholder:font-sans focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
               autoFocus
             />
