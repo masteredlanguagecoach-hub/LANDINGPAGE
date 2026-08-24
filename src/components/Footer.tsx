@@ -2,6 +2,8 @@
 
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
+import { Lock } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -28,13 +30,13 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Legal Navigation Links */}
-          <div className="flex flex-wrap justify-center gap-6 text-sm font-semibold">
+          {/* Legal Navigation Links & Admin Console */}
+          <div className="flex flex-wrap justify-center items-center gap-6 text-sm font-semibold">
             <a
               href="#privacy"
               onClick={(e) => {
                 e.preventDefault();
-                alert('Privacy Policy placeholder: Mastered Language Coach respects your data privacy.');
+                alert('Privacy Policy: Mastered Language Coach respects your data privacy.');
               }}
               className="hover:text-white transition-colors"
             >
@@ -44,7 +46,7 @@ export default function Footer() {
               href="#terms"
               onClick={(e) => {
                 e.preventDefault();
-                alert('Terms & Conditions placeholder: Mastered Language Coach Speaking Challenge.');
+                alert('Terms & Conditions: Mastered Language Coach Speaking Challenge.');
               }}
               className="hover:text-white transition-colors"
             >
@@ -54,7 +56,7 @@ export default function Footer() {
               href="#refund"
               onClick={(e) => {
                 e.preventDefault();
-                alert('Refund Policy placeholder: 100% transparent enrollment terms.');
+                alert('Refund Policy: 100% transparent enrollment terms.');
               }}
               className="hover:text-white transition-colors"
             >
@@ -70,6 +72,15 @@ export default function Footer() {
             >
               Contact Support
             </a>
+
+            {/* Admin Console Link */}
+            <Link
+              href="/admin"
+              className="inline-flex items-center gap-1.5 text-brand-400 hover:text-brand-300 font-bold bg-brand-500/10 border border-brand-500/20 px-3 py-1 rounded-lg transition-all"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              <span>Admin Console</span>
+            </Link>
           </div>
         </div>
 
