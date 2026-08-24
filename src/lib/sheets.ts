@@ -83,7 +83,6 @@ export const PAYMENT_LOGS_HEADERS = [
 
 /**
  * Sends student registration payload to Google Apps Script Web App URL.
- * Uses await, query parameters, and redirect: follow so Vercel serverless context doesn't terminate early.
  */
 async function sendToAppsScript(action: string, payload: any): Promise<boolean> {
   const scriptUrl = getAppsScriptUrl();
@@ -281,7 +280,7 @@ export async function appendPaidStudentRow(student: PaidStudentRow): Promise<{ s
 
   inMemoryPaidStudents.push(student);
 
-  // Await payload delivery to Google Apps Script Web App URL so Vercel serverless context doesn't terminate early
+  // Await payload delivery to Google Apps Script Web App URL
   await sendToAppsScript('addPaidStudent', student);
 
   const spreadsheetId = getSpreadsheetId();
@@ -443,4 +442,91 @@ export async function updateEmailDeliveryStatus(paymentId: string, newStatus: 'S
     console.error('[GoogleSheets] Failed to update email delivery status:', error);
     return false;
   }
+}
+
+/**
+ * Fetches all student records and transaction logs for the Admin Dashboard live sync.
+ */
+export async function getAdminDashboardData(): Promise<{
+  students: PaidStudentRow[];
+  logs: PaymentLogRow[];
+  source: 'apps_script' | 'google_api' | 'in_memory';
+}> {
+  const scriptUrl = getAppsScriptUrl();
+
+  // 1. Query Apps Script action=getAdminData first
+  if (scriptUrl) {
+    try {
+      const res = await fetch(`${scriptUrl}?action=getAdminData`, {
+        cache: 'no-store',
+        redirect: 'follow',
+      });
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.students)) {
+        return {
+          students: data.students,
+          logs: data.logs || [],
+          source: 'apps_script',
+        };
+      }
+    } catch (err) {
+      console.warn('[GoogleSheets Admin] Apps Script fetch failed:', err);
+    }
+  }
+
+  // 2. Query Google Sheets API if credentials present
+  const spreadsheetId = getSpreadsheetId();
+  const sheets = getGoogleSheetsClient();
+  if (sheets && spreadsheetId) {
+    try {
+      const res = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: `${PAID_STUDENTS_SHEET}!A:Z`,
+      });
+
+      const rows = res.data.values;
+      if (rows && rows.length > 1) {
+        const headers: string[] = rows[0];
+        const parsedStudents: PaidStudentRow[] = [];
+
+        for (let i = 1; i < rows.length; i++) {
+          const r = rows[i];
+          parsedStudents.push({
+            timestamp: r[0] || '',
+            admissionNumber: r[1] || `MLC${785 + i}`,
+            fullName: r[2] || '',
+            email: r[3] || '',
+            emailVerified: (r[4] || 'YES') as 'YES' | 'NO',
+            whatsappNumber: r[5] || '',
+            courseCode: r[6] || 'ML-EN',
+            courseName: r[7] || 'Malayalam to English Speaking Challenge',
+            amount: Number(r[8]) || 399,
+            currency: r[9] || 'INR',
+            paymentStatus: (r[10] || 'SUCCESS') as any,
+            razorpayOrderId: r[11] || '',
+            razorpayPaymentId: r[12] || '',
+            paymentVerificationStatus: (r[13] || 'VERIFIED_HMAC_SHA256') as any,
+            enrollmentStatus: (r[14] || 'ACTIVE') as any,
+            emailDeliveryStatus: (r[15] || 'SENT') as any,
+            createdAt: r[16] || r[0] || new Date().toISOString(),
+          });
+        }
+
+        return {
+          students: parsedStudents,
+          logs: [],
+          source: 'google_api',
+        };
+      }
+    } catch (err) {
+      console.warn('[GoogleSheets Admin] Google Sheets API fetch failed:', err);
+    }
+  }
+
+  // 3. Fallback in-memory data
+  return {
+    students: inMemoryPaidStudents,
+    logs: inMemoryPaymentLogs,
+    source: 'in_memory',
+  };
 }

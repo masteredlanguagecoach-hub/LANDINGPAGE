@@ -1,0 +1,178 @@
+'use client';
+
+import React, { useState } from 'react';
+import { PaidStudentRow } from '@/types';
+import { Copy, Check, MessageSquare, ExternalLink, ShieldCheck, Clock, User, Mail } from 'lucide-react';
+
+interface AdminDataTableProps {
+  students: PaidStudentRow[];
+  isLoading: boolean;
+}
+
+export default function AdminDataTable({ students, isLoading }: AdminDataTableProps) {
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopy = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2500);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="bg-[#111827] border border-slate-800 rounded-3xl p-12 text-center space-y-4">
+        <div className="w-12 h-12 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto" />
+        <p className="text-slate-400 font-semibold text-sm">Syncing live student records with Google Sheet...</p>
+      </div>
+    );
+  }
+
+  if (students.length === 0) {
+    return (
+      <div className="bg-[#111827] border border-slate-800 rounded-3xl p-12 text-center space-y-3">
+        <p className="text-slate-300 font-bold text-lg">No student records found</p>
+        <p className="text-slate-500 text-sm">Try adjusting your search terms or date range filters.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-[#111827] border border-slate-800 rounded-3xl shadow-xl overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm text-slate-300">
+          <thead className="bg-[#1F2937]/80 text-xs font-black uppercase tracking-wider text-slate-400 border-b border-slate-800">
+            <tr>
+              <th className="px-6 py-4">Admission No</th>
+              <th className="px-6 py-4">Student Info</th>
+              <th className="px-6 py-4">WhatsApp Contact</th>
+              <th className="px-6 py-4">Course</th>
+              <th className="px-6 py-4">Amount</th>
+              <th className="px-6 py-4">Payment ID</th>
+              <th className="px-6 py-4">Status</th>
+              <th className="px-6 py-4 text-right">Date & Time</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-800/60 font-medium">
+            {students.map((student, idx) => {
+              const admissionNo = student.admissionNumber || `MLC${786 + idx}`;
+              const cleanWhatsApp = (student.whatsappNumber || '').replace(/\D/g, '');
+              const waLink = cleanWhatsApp ? `https://wa.me/${cleanWhatsApp}` : null;
+              const formattedDate = student.createdAt || student.timestamp
+                ? new Date(student.createdAt || student.timestamp).toLocaleString('en-IN', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : '—';
+
+              return (
+                <tr key={student.razorpayPaymentId || idx} className="hover:bg-[#1F2937]/40 transition-colors">
+                  {/* 1. Admission Number with 1-Click Copy */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="inline-flex items-center gap-2 bg-[#1F2937] border border-slate-700/80 px-3 py-1.5 rounded-xl font-mono text-xs text-brand-300 font-bold">
+                      <span>{admissionNo}</span>
+                      <button
+                        onClick={() => handleCopy(admissionNo, `adm-${idx}`)}
+                        className="text-slate-400 hover:text-white transition-colors cursor-pointer"
+                        title="Copy Admission Number"
+                      >
+                        {copiedId === `adm-${idx}` ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
+                  </td>
+
+                  {/* 2. Student Info */}
+                  <td className="px-6 py-4">
+                    <div className="space-y-0.5">
+                      <div className="font-bold text-white flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-brand-400" />
+                        <span>{student.fullName || 'Anonymous Student'}</span>
+                      </div>
+                      <div className="text-xs text-slate-400 flex items-center gap-1.5">
+                        <Mail className="w-3.5 h-3.5 text-slate-500" />
+                        <span>{student.email || '—'}</span>
+                      </div>
+                    </div>
+                  </td>
+
+                  {/* 3. WhatsApp Direct Contact */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {waLink ? (
+                      <a
+                        href={waLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        <span>{student.whatsappNumber}</span>
+                        <ExternalLink className="w-3 h-3 opacity-60" />
+                      </a>
+                    ) : (
+                      <span className="text-slate-500 text-xs">—</span>
+                    )}
+                  </td>
+
+                  {/* 4. Course */}
+                  <td className="px-6 py-4 whitespace-nowrap text-xs font-semibold text-slate-300">
+                    {student.courseCode === 'HI-EN' ? 'Hindi → English' : 'Malayalam → English'}
+                  </td>
+
+                  {/* 5. Amount */}
+                  <td className="px-6 py-4 whitespace-nowrap font-bold text-emerald-400 text-base">
+                    ₹{student.amount || 399}
+                  </td>
+
+                  {/* 6. Razorpay Payment ID */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {student.razorpayPaymentId ? (
+                      <div className="inline-flex items-center gap-1.5 font-mono text-xs text-slate-400 bg-slate-800/60 px-2.5 py-1 rounded-lg">
+                        <span>{student.razorpayPaymentId}</span>
+                        <button
+                          onClick={() => handleCopy(student.razorpayPaymentId, `pay-${idx}`)}
+                          className="hover:text-white transition-colors cursor-pointer"
+                        >
+                          {copiedId === `pay-${idx}` ? (
+                            <Check className="w-3 h-3 text-emerald-400" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-slate-500 text-xs">—</span>
+                    )}
+                  </td>
+
+                  {/* 7. Status */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {student.paymentStatus === 'SUCCESS' ? (
+                      <span className="inline-flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-extrabold px-2.5 py-1 rounded-full">
+                        <ShieldCheck className="w-3.5 h-3.5" /> Verified
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-extrabold px-2.5 py-1 rounded-full">
+                        <Clock className="w-3.5 h-3.5" /> Pending
+                      </span>
+                    )}
+                  </td>
+
+                  {/* 8. Timestamp */}
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-xs text-slate-400">
+                    {formattedDate}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
