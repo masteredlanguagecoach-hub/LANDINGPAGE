@@ -1,8 +1,7 @@
 'use client';
 
 import React from 'react';
-import Image from 'next/image';
-import { ArrowRight, CheckCircle2, Sparkles, MessageSquareQuote, Shield } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Sparkles, MessageSquareQuote, Shield, Play } from 'lucide-react';
 
 export default function Hero() {
   const scrollToCourse = () => {
@@ -41,8 +40,25 @@ export default function Hero() {
             Join the <strong className="text-slate-900 font-bold">Mastered Language Coach Speaking Challenge</strong> and build the confidence to use English in real conversations.
           </p>
 
+          {/* Featured YouTube Video Embed */}
+          <div className="pt-2 pb-4 max-w-3xl mx-auto">
+            <div className="relative overflow-hidden rounded-3xl border-4 border-white shadow-2xl shadow-slate-900/15 bg-slate-950 aspect-video ring-1 ring-slate-200">
+              <iframe
+                src="https://www.youtube.com/embed/VB2wfG95w5I?rel=0&modestbranding=1"
+                title="Mastered Language Coach Speaking Challenge Intro Video"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                className="absolute inset-0 w-full h-full rounded-2xl"
+              />
+            </div>
+            <p className="mt-3 text-xs sm:text-sm font-semibold text-slate-500 flex items-center justify-center gap-1.5">
+              <Play className="w-4 h-4 text-brand-500 fill-brand-500" />
+              <span>Watch how the Speaking Challenge transforms your fluency</span>
+            </p>
+          </div>
+
           {/* Primary CTA & Secondary Message */}
-          <div className="pt-2 sm:pt-4 flex flex-col items-center gap-4">
+          <div className="pt-2 flex flex-col items-center gap-4">
             <button
               onClick={scrollToCourse}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-brand-500 hover:bg-brand-600 active:bg-brand-700 text-white font-extrabold text-lg sm:text-xl px-8 py-4 sm:px-10 sm:py-5 rounded-2xl shadow-xl hover:shadow-2xl shadow-brand-500/25 transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
@@ -57,7 +73,7 @@ export default function Hero() {
           </div>
 
           {/* Quick Value Badges */}
-          <div className="pt-6 sm:pt-10 grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl mx-auto text-left">
+          <div className="pt-6 sm:pt-8 grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl mx-auto text-left">
             <div className="flex items-center gap-3 bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs">
               <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
               <span className="text-xs sm:text-sm font-bold text-slate-700">100% Practical Speaking</span>
