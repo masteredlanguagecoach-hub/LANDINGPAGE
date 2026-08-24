@@ -57,7 +57,15 @@ export default function AdminDataTable({ students, isLoading }: AdminDataTablePr
               const admissionNo = String(student.admissionNumber || `MLC${786 + idx}`);
               const rawPhone = String(student.whatsappNumber || '');
               const cleanWhatsApp = rawPhone.replace(/\D/g, '');
-              const waLink = cleanWhatsApp ? `https://wa.me/${cleanWhatsApp}` : null;
+              const studentName = String(student.fullName || 'Student');
+              const studentEmail = String(student.email || 'N/A');
+
+              // Pre-filled WhatsApp Welcome & Motivation Message
+              const welcomeMessage = `Hello ${studentName} 👋,\n\nWelcome to Mastered Language Coach Speaking Challenge! 🚀\n\nHere are your official enrollment details:\n📌 Admission Number: ${admissionNo}\n📧 Email ID: ${studentEmail}\n\n🔗 Practice App Portal:\nhttps://mastered-module-web.vercel.app/\n\n⚠️ Important: Please keep your Admission Number strictly confidential as it is your unique access credential.\n\n💡 Pro Tip: Make practicing English with your AI Speaking Coach a daily hobby! Spend just 10-15 minutes every day speaking out loud, and watch your fluency and confidence skyrocket. 🌟\n\nWe are excited to support you on your speaking journey! If you have any questions, feel free to reply right here.\n\nWarm regards,\nMastered Language Coach Team 🎯`;
+
+              const waLink = cleanWhatsApp
+                ? `https://wa.me/${cleanWhatsApp}?text=${encodeURIComponent(welcomeMessage)}`
+                : null;
               
               let formattedDate = '—';
               try {
@@ -105,23 +113,24 @@ export default function AdminDataTable({ students, isLoading }: AdminDataTablePr
                     <div className="space-y-0.5">
                       <div className="font-bold text-white flex items-center gap-1.5">
                         <User className="w-3.5 h-3.5 text-brand-400" />
-                        <span>{String(student.fullName || 'Anonymous Student')}</span>
+                        <span>{studentName}</span>
                       </div>
                       <div className="text-xs text-slate-400 flex items-center gap-1.5">
                         <Mail className="w-3.5 h-3.5 text-slate-500" />
-                        <span>{String(student.email || '—')}</span>
+                        <span>{studentEmail}</span>
                       </div>
                     </div>
                   </td>
 
-                  {/* 3. WhatsApp Direct Contact */}
+                  {/* 3. WhatsApp Direct Contact with Pre-filled Welcome Message */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     {waLink ? (
                       <a
                         href={waLink}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
+                        className="inline-flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm"
+                        title="Send Welcome & Portal Link via WhatsApp"
                       >
                         <MessageSquare className="w-3.5 h-3.5" />
                         <span>{rawPhone}</span>
