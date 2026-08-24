@@ -21,20 +21,10 @@ export const COURSES_CATALOG: Omit<Course, 'price'>[] = [
 ];
 
 /**
- * Gets the authoritative price for a course ID from server-side environment configuration.
- * Default fallback is ₹399.
+ * Gets the authoritative price for a course ID.
+ * Fixed at ₹399 in INR.
  */
 export function getCoursePrice(courseId: string): number {
-  if (courseId === 'ML-EN') {
-    const envPrice = process.env.COURSE_MALAYALAM_ENGLISH_PRICE;
-    return envPrice ? parseInt(envPrice, 10) : 399;
-  }
-  if (courseId === 'HI-EN') {
-    const envPrice = process.env.COURSE_HINDI_ENGLISH_PRICE;
-    return envPrice ? parseInt(envPrice, 10) : 399;
-  }
-  
-  // Default price for extended courses
   return 399;
 }
 
@@ -51,7 +41,7 @@ export function getCourseById(courseId: string): Course | null {
 }
 
 /**
- * Returns all available courses with current environment pricing.
+ * Returns all available courses with current pricing.
  */
 export function getAllCourses(): Course[] {
   return COURSES_CATALOG.map((course) => ({

@@ -56,7 +56,7 @@ export default function EnrollmentForm({
 
   // Selected Course
   const selectedCourse = courses.find((c) => c.id === selectedCourseId) || courses[0];
-  const currentPrice = selectedCourse ? selectedCourse.price : 5;
+  const currentPrice = selectedCourse ? selectedCourse.price : 399;
 
   // Reset Email Verification if user changes email text
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
