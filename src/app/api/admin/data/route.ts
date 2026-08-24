@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDashboardData } from '@/lib/sheets';
 
+export const dynamic = 'force-dynamic';
+
 const DEFAULT_ADMIN_PIN = '7860';
 
 export async function GET(req: NextRequest) {
