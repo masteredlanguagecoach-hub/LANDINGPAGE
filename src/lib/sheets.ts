@@ -1,5 +1,5 @@
 import { google } from 'googleapis';
-import { PaidStudentRow, PaymentLogRow } from '@/types';
+import { PaidStudentRow, PaymentLogRow, ExpenseRow } from '@/types';
 
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
@@ -18,6 +18,7 @@ export function getAppsScriptUrl(): string {
 // Local in-memory fallback log when Google Sheets API credentials are not yet configured
 const inMemoryPaidStudents: PaidStudentRow[] = [];
 const inMemoryPaymentLogs: PaymentLogRow[] = [];
+const inMemoryExpenses: ExpenseRow[] = [];
 
 /**
  * Initializes authenticated Google Sheets API client using Service Account credentials.
@@ -30,7 +31,6 @@ function getGoogleSheetsClient() {
     return null; // Credentials not configured yet
   }
 
-  // Handle escaped newlines in Vercel/Env variables
   privateKey = privateKey.replace(/\\n/g, '\n');
 
   const auth = new google.auth.JWT({
@@ -44,6 +44,7 @@ function getGoogleSheetsClient() {
 
 export const PAID_STUDENTS_SHEET = 'PAID_STUDENTS';
 export const PAYMENT_LOGS_SHEET = 'PAYMENT_LOGS';
+export const EXPENSES_SHEET = 'EXPENSES';
 
 export const PAID_STUDENTS_HEADERS = [
   'Timestamp',
@@ -81,8 +82,18 @@ export const PAYMENT_LOGS_HEADERS = [
   'Notes',
 ];
 
+export const EXPENSES_HEADERS = [
+  'Timestamp',
+  'Expense ID',
+  'Category',
+  'Description',
+  'Amount',
+  'Date',
+  'Created At',
+];
+
 /**
- * Sends student registration payload to Google Apps Script Web App URL.
+ * Sends payload to Google Apps Script Web App URL.
  */
 async function sendToAppsScript(action: string, payload: any): Promise<boolean> {
   const scriptUrl = getAppsScriptUrl();
@@ -120,13 +131,11 @@ async function sendToAppsScript(action: string, payload: any): Promise<boolean> 
 
 /**
  * Generates sequential Admission Number by inspecting Column B of Google Sheets (PAID_STUDENTS).
- * Finds the highest number used so far (e.g., MLC788) and returns the next (e.g., MLC789).
  */
 export async function getNextAdmissionNumber(): Promise<string> {
   const STARTING_NO = 786;
   const scriptUrl = getAppsScriptUrl();
 
-  // 1. Try Google Apps Script URL first to scan Column B
   if (scriptUrl) {
     try {
       const res = await fetch(`${scriptUrl}?action=getNextAdmissionNumber`, {
@@ -135,7 +144,6 @@ export async function getNextAdmissionNumber(): Promise<string> {
       });
       const data = await res.json();
       if (data && data.admissionNumber) {
-        console.log(`[GoogleSheets] Received next Admission Number from Apps Script: ${data.admissionNumber}`);
         return data.admissionNumber;
       }
     } catch (err) {
@@ -143,7 +151,6 @@ export async function getNextAdmissionNumber(): Promise<string> {
     }
   }
 
-  // 2. Try Google Sheets API if credentials present
   const spreadsheetId = getSpreadsheetId();
   const sheets = getGoogleSheetsClient();
   if (sheets && spreadsheetId) {
@@ -155,7 +162,7 @@ export async function getNextAdmissionNumber(): Promise<string> {
 
       const rows = res.data.values;
       if (rows && rows.length > 1) {
-        let maxNum = STARTING_NO - 1; // 785
+        let maxNum = STARTING_NO - 1;
         for (let i = 1; i < rows.length; i++) {
           const val = String(rows[i][0] || '').trim();
           const match = val.match(/MLC(\d+)/i);
@@ -173,14 +180,10 @@ export async function getNextAdmissionNumber(): Promise<string> {
     }
   }
 
-  // 3. Fallback count
   const nextNum = STARTING_NO + inMemoryPaidStudents.length;
   return `MLC${nextNum}`;
 }
 
-/**
- * Ensures header row exists on sheet worksheets.
- */
 async function ensureSheetHeaders(sheets: any, spreadsheetId: string, sheetName: string, headers: string[]) {
   try {
     const res = await sheets.spreadsheets.values.get({
@@ -226,9 +229,6 @@ async function ensureSheetHeaders(sheets: any, spreadsheetId: string, sheetName:
   }
 }
 
-/**
- * Checks if a Razorpay Payment ID or Order ID already exists in PAID_STUDENTS sheet.
- */
 export async function isPaymentAlreadyProcessed(paymentId: string, orderId: string): Promise<boolean> {
   const spreadsheetId = getSpreadsheetId();
   const sheets = getGoogleSheetsClient();
@@ -268,26 +268,19 @@ export async function isPaymentAlreadyProcessed(paymentId: string, orderId: stri
   }
 }
 
-/**
- * Appends a verified paid student record to Google Sheets via Google Sheets API AND Google Apps Script Web App URL.
- */
 export async function appendPaidStudentRow(student: PaidStudentRow): Promise<{ success: boolean; duplicate: boolean }> {
   const alreadyProcessed = await isPaymentAlreadyProcessed(student.razorpayPaymentId, student.razorpayOrderId);
   if (alreadyProcessed) {
-    console.log(`[GoogleSheets] Payment ${student.razorpayPaymentId} already recorded. Skipping duplicate.`);
     return { success: true, duplicate: true };
   }
 
   inMemoryPaidStudents.push(student);
-
-  // Await payload delivery to Google Apps Script Web App URL
   await sendToAppsScript('addPaidStudent', student);
 
   const spreadsheetId = getSpreadsheetId();
   const sheets = getGoogleSheetsClient();
 
   if (!sheets || !spreadsheetId) {
-    console.log('[GoogleSheets Fallback] Recorded Paid Student:', student);
     return { success: true, duplicate: false };
   }
 
@@ -333,20 +326,14 @@ export async function appendPaidStudentRow(student: PaidStudentRow): Promise<{ s
   }
 }
 
-/**
- * Appends transaction log to PAYMENT_LOGS worksheet via API and Apps Script URL.
- */
 export async function appendPaymentLogRow(log: PaymentLogRow): Promise<boolean> {
   inMemoryPaymentLogs.push(log);
-
-  // Await payload delivery to Google Apps Script Web App URL
   await sendToAppsScript('addPaymentLog', log);
 
   const spreadsheetId = getSpreadsheetId();
   const sheets = getGoogleSheetsClient();
 
   if (!sheets || !spreadsheetId) {
-    console.log('[GoogleSheets Fallback] Recorded Payment Log:', log);
     return true;
   }
 
@@ -389,8 +376,50 @@ export async function appendPaymentLogRow(log: PaymentLogRow): Promise<boolean> 
 }
 
 /**
- * Updates email delivery status in Google Sheets for a student if email delivery fails or is resent.
+ * Appends a new business expense row to Google Sheets via API and Apps Script URL.
  */
+export async function appendExpenseRow(expense: ExpenseRow): Promise<boolean> {
+  inMemoryExpenses.push(expense);
+  await sendToAppsScript('addExpense', expense);
+
+  const spreadsheetId = getSpreadsheetId();
+  const sheets = getGoogleSheetsClient();
+
+  if (!sheets || !spreadsheetId) {
+    console.log('[GoogleSheets Fallback] Recorded Expense:', expense);
+    return true;
+  }
+
+  try {
+    await ensureSheetHeaders(sheets, spreadsheetId, EXPENSES_SHEET, EXPENSES_HEADERS);
+
+    const rowValues = [
+      expense.timestamp,
+      expense.expenseId,
+      expense.category,
+      expense.description,
+      expense.amount,
+      expense.date,
+      expense.createdAt,
+    ];
+
+    await sheets.spreadsheets.values.append({
+      spreadsheetId,
+      range: `${EXPENSES_SHEET}!A1`,
+      valueInputOption: 'USER_ENTERED',
+      insertDataOption: 'INSERT_ROWS',
+      requestBody: {
+        values: [rowValues],
+      },
+    });
+
+    return true;
+  } catch (error) {
+    console.error('[GoogleSheets] Error appending expense via API:', error);
+    return true;
+  }
+}
+
 export async function updateEmailDeliveryStatus(paymentId: string, newStatus: 'SENT' | 'FAILED'): Promise<boolean> {
   const student = inMemoryPaidStudents.find((s) => s.razorpayPaymentId === paymentId);
   if (student) {
@@ -445,11 +474,12 @@ export async function updateEmailDeliveryStatus(paymentId: string, newStatus: 'S
 }
 
 /**
- * Fetches all student records and transaction logs for the Admin Dashboard live sync.
+ * Fetches all student records, transaction logs, and business expenses for the Admin Dashboard.
  */
 export async function getAdminDashboardData(): Promise<{
   students: PaidStudentRow[];
   logs: PaymentLogRow[];
+  expenses: ExpenseRow[];
   source: 'apps_script' | 'google_api' | 'in_memory';
 }> {
   const scriptUrl = getAppsScriptUrl();
@@ -466,6 +496,7 @@ export async function getAdminDashboardData(): Promise<{
         return {
           students: data.students,
           logs: data.logs || [],
+          expenses: data.expenses || [],
           source: 'apps_script',
         };
       }
@@ -479,18 +510,18 @@ export async function getAdminDashboardData(): Promise<{
   const sheets = getGoogleSheetsClient();
   if (sheets && spreadsheetId) {
     try {
-      const res = await sheets.spreadsheets.values.get({
+      // Fetch Students
+      const resStudents = await sheets.spreadsheets.values.get({
         spreadsheetId,
         range: `${PAID_STUDENTS_SHEET}!A:Z`,
       });
 
-      const rows = res.data.values;
-      if (rows && rows.length > 1) {
-        const headers: string[] = rows[0];
-        const parsedStudents: PaidStudentRow[] = [];
+      const rowsStudents = resStudents.data.values || [];
+      const parsedStudents: PaidStudentRow[] = [];
 
-        for (let i = 1; i < rows.length; i++) {
-          const r = rows[i];
+      if (rowsStudents.length > 1) {
+        for (let i = 1; i < rowsStudents.length; i++) {
+          const r = rowsStudents[i];
           parsedStudents.push({
             timestamp: r[0] || '',
             admissionNumber: r[1] || `MLC${785 + i}`,
@@ -511,13 +542,40 @@ export async function getAdminDashboardData(): Promise<{
             createdAt: r[16] || r[0] || new Date().toISOString(),
           });
         }
-
-        return {
-          students: parsedStudents,
-          logs: [],
-          source: 'google_api',
-        };
       }
+
+      // Fetch Expenses
+      let parsedExpenses: ExpenseRow[] = [];
+      try {
+        const resExpenses = await sheets.spreadsheets.values.get({
+          spreadsheetId,
+          range: `${EXPENSES_SHEET}!A:Z`,
+        });
+        const rowsExpenses = resExpenses.data.values || [];
+        if (rowsExpenses.length > 1) {
+          for (let e = 1; e < rowsExpenses.length; e++) {
+            const ex = rowsExpenses[e];
+            parsedExpenses.push({
+              timestamp: ex[0] || '',
+              expenseId: ex[1] || `EXP_${e}`,
+              category: (ex[2] || 'Other') as any,
+              description: ex[3] || '',
+              amount: Number(ex[4]) || 0,
+              date: ex[5] || ex[0] || new Date().toISOString().slice(0, 10),
+              createdAt: ex[6] || ex[0] || new Date().toISOString(),
+            });
+          }
+        }
+      } catch (expErr) {
+        console.warn('[GoogleSheets Admin] No EXPENSES sheet tab found yet.');
+      }
+
+      return {
+        students: parsedStudents,
+        logs: [],
+        expenses: parsedExpenses,
+        source: 'google_api',
+      };
     } catch (err) {
       console.warn('[GoogleSheets Admin] Google Sheets API fetch failed:', err);
     }
@@ -527,6 +585,7 @@ export async function getAdminDashboardData(): Promise<{
   return {
     students: inMemoryPaidStudents,
     logs: inMemoryPaymentLogs,
+    expenses: inMemoryExpenses,
     source: 'in_memory',
   };
 }

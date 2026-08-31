@@ -3,7 +3,7 @@ export interface Course {
   name: string; // e.g. "Malayalam to English Speaking Challenge"
   displayLanguage: string; // "Malayalam → English"
   description: string;
-  price: number; // In INR (e.g. 5)
+  price: number; // In INR (e.g. 399)
   currency: string; // "INR"
   badge?: string;
   popular?: boolean;
@@ -58,13 +58,13 @@ export interface PaidStudentRow {
   razorpayPaymentId: string;
   paymentVerificationStatus: string; // "VERIFIED_HMAC_SHA256"
   enrollmentStatus: string; // "ACTIVE"
-  emailDeliveryStatus: string; // "SENT" | "FAILED"
+  emailDeliveryStatus: string; // "SENT" or "FAILED"
   createdAt: string;
 }
 
 export interface PaymentLogRow {
   timestamp: string;
-  admissionNumber: string; // e.g. "MLC786"
+  admissionNumber?: string;
   internalEnrollmentId?: string; // Legacy alias
   razorpayOrderId: string;
   razorpayPaymentId: string;
@@ -77,4 +77,14 @@ export interface PaymentLogRow {
   email: string;
   whatsappNumber: string;
   notes: string;
+}
+
+export interface ExpenseRow {
+  timestamp: string;
+  expenseId: string;
+  category: 'Meta Ads' | 'Google Ads' | 'Domain & Hosting' | 'Software & Tools' | 'Content & Design' | 'Operational' | 'Other';
+  description: string;
+  amount: number;
+  date: string;
+  createdAt: string;
 }

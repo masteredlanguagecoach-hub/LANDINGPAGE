@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDashboardData } from '@/lib/sheets';
-import { PaidStudentRow } from '@/types';
+import { PaidStudentRow, ExpenseRow } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
 
     const rawData = await getAdminDashboardData();
     let rawStudents = rawData.students || [];
+    let rawExpenses = rawData.expenses || [];
 
     // Ensure all student string fields are explicitly cast to string to prevent client-side .replace() exceptions
     const students: PaidStudentRow[] = rawStudents.map((s, idx) => ({
@@ -43,14 +44,31 @@ export async function GET(req: NextRequest) {
       createdAt: String(s.createdAt || s.timestamp || new Date().toISOString()),
     }));
 
-    // Sort students by newest first
+    // Ensure all expense fields are safely typed
+    const expenses: ExpenseRow[] = rawExpenses.map((ex, idx) => ({
+      timestamp: String(ex.timestamp || ''),
+      expenseId: String(ex.expenseId || `EXP_${idx}`),
+      category: (ex.category || 'Other') as any,
+      description: String(ex.description || ''),
+      amount: Number(ex.amount) || 0,
+      date: String(ex.date || ex.timestamp || ''),
+      createdAt: String(ex.createdAt || ex.timestamp || new Date().toISOString()),
+    }));
+
+    // Sort students & expenses by newest first
     students.sort((a, b) => {
       const timeA = new Date(a.createdAt || a.timestamp || 0).getTime();
       const timeB = new Date(b.createdAt || b.timestamp || 0).getTime();
       return timeB - timeA;
     });
 
-    // Compute Overall Analytics Metrics
+    expenses.sort((a, b) => {
+      const timeA = new Date(a.createdAt || a.timestamp || 0).getTime();
+      const timeB = new Date(b.createdAt || b.timestamp || 0).getTime();
+      return timeB - timeA;
+    });
+
+    // Compute Overall Revenue & Expense Metrics
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 
@@ -78,14 +96,21 @@ export async function GET(req: NextRequest) {
       }
     });
 
-    // Filtering logic
+    // Compute Total Expenses & Net Balance
+    let totalExpenses = 0;
+    expenses.forEach((e) => {
+      totalExpenses += Number(e.amount) || 0;
+    });
+
+    const netBalance = totalRevenue - totalExpenses;
+
+    // Filtering logic for student table
     const searchQuery = (searchParams.get('search') || '').toLowerCase().trim();
     const dateRange = searchParams.get('dateRange') || 'all_time';
     const course = searchParams.get('course') || 'all';
     const status = searchParams.get('status') || 'all';
 
     let filteredStudents = students.filter((student) => {
-      // 1. Search filter
       if (searchQuery) {
         const matchesName = String(student.fullName || '').toLowerCase().includes(searchQuery);
         const matchesEmail = String(student.email || '').toLowerCase().includes(searchQuery);
@@ -96,17 +121,14 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      // 2. Course filter
       if (course !== 'all' && student.courseCode !== course) {
         return false;
       }
 
-      // 3. Status filter
       if (status !== 'all' && student.paymentStatus !== status) {
         return false;
       }
 
-      // 4. Date range filter
       if (dateRange !== 'all_time') {
         const createdTime = new Date(student.createdAt || student.timestamp || 0).getTime();
         const oneDayMs = 24 * 60 * 60 * 1000;
@@ -131,7 +153,6 @@ export async function GET(req: NextRequest) {
       return true;
     });
 
-    // Compute Filtered Revenue & Count
     let filteredRevenue = 0;
     filteredStudents.forEach((s) => {
       if (s.paymentStatus === 'SUCCESS') {
@@ -144,6 +165,8 @@ export async function GET(req: NextRequest) {
       source: rawData.source,
       stats: {
         totalRevenue,
+        totalExpenses,
+        netBalance,
         totalPaidStudentsCount,
         todaySalesCount,
         todaySalesAmount,
@@ -152,6 +175,7 @@ export async function GET(req: NextRequest) {
         filteredCount: filteredStudents.length,
       },
       students: filteredStudents,
+      expenses,
     });
   } catch (error: any) {
     console.error('[Admin API] Error fetching dashboard data:', error);

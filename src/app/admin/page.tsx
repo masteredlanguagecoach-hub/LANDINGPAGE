@@ -5,9 +5,12 @@ import AdminPinModal from '@/components/admin/AdminPinModal';
 import AdminHeader from '@/components/admin/AdminHeader';
 import AdminSummaryBanner from '@/components/admin/AdminSummaryBanner';
 import AdminKpiGrid from '@/components/admin/AdminKpiGrid';
+import AdminAccountingSection from '@/components/admin/AdminAccountingSection';
+import AdminAddExpenseModal from '@/components/admin/AdminAddExpenseModal';
+import AdminExpenseTable from '@/components/admin/AdminExpenseTable';
 import AdminFiltersBar from '@/components/admin/AdminFiltersBar';
 import AdminDataTable from '@/components/admin/AdminDataTable';
-import { PaidStudentRow } from '@/types';
+import { PaidStudentRow, ExpenseRow } from '@/types';
 
 export default function AdminPage() {
   const [adminPin, setAdminPin] = useState<string | null>(null);
@@ -20,10 +23,16 @@ export default function AdminPage() {
   const [selectedCourse, setSelectedCourse] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
 
+  // Modal State
+  const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
+
   // Data States
   const [students, setStudents] = useState<PaidStudentRow[]>([]);
+  const [expenses, setExpenses] = useState<ExpenseRow[]>([]);
   const [stats, setStats] = useState({
     totalRevenue: 0,
+    totalExpenses: 0,
+    netBalance: 0,
     totalPaidStudentsCount: 0,
     todaySalesCount: 0,
     todaySalesAmount: 0,
@@ -69,6 +78,7 @@ export default function AdminPage() {
         const data = await res.json();
         if (data && data.success) {
           setStudents(data.students || []);
+          setExpenses(data.expenses || []);
           if (data.stats) {
             setStats(data.stats);
           }
@@ -107,6 +117,37 @@ export default function AdminPage() {
       return true;
     }
     return false;
+  };
+
+  // Submit Expense Handler
+  const handleAddExpense = async (expensePayload: {
+    category: string;
+    description: string;
+    amount: number;
+    date: string;
+  }): Promise<boolean> => {
+    if (!adminPin) return false;
+
+    try {
+      const res = await fetch('/api/admin/expense', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-pin': adminPin,
+        },
+        body: JSON.stringify(expensePayload),
+      });
+
+      const data = await res.json();
+      if (data && data.success) {
+        await fetchData(adminPin, true);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('[Admin Dashboard] Failed to submit expense:', err);
+      return false;
+    }
   };
 
   // Logout handler
@@ -213,7 +254,18 @@ export default function AdminPage() {
           pendingOrdersCount={stats.pendingOrdersCount}
         />
 
-        {/* 3. 4 KPI Stat Cards */}
+        {/* 3. Financial Balance & Accounting Section */}
+        <AdminAccountingSection
+          totalRevenue={stats.totalRevenue}
+          totalExpenses={stats.totalExpenses}
+          netBalance={stats.netBalance}
+          onOpenAddExpense={() => setIsAddExpenseOpen(true)}
+        />
+
+        {/* 4. Expenses Log History Table */}
+        <AdminExpenseTable expenses={expenses} isLoading={isLoading} />
+
+        {/* 5. 4 KPI Stat Cards */}
         <AdminKpiGrid
           totalRevenue={stats.totalRevenue}
           totalPaidStudentsCount={stats.totalPaidStudentsCount}
@@ -222,7 +274,7 @@ export default function AdminPage() {
           pendingOrdersCount={stats.pendingOrdersCount}
         />
 
-        {/* 4. Interactive Filters Bar */}
+        {/* 6. Interactive Filters Bar */}
         <AdminFiltersBar
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -234,9 +286,16 @@ export default function AdminPage() {
           setSelectedStatus={setSelectedStatus}
         />
 
-        {/* 5. Live Synced Student Data Table */}
+        {/* 7. Live Synced Student Data Table */}
         <AdminDataTable students={students} isLoading={isLoading} />
       </main>
+
+      {/* Add Expense Logger Modal */}
+      <AdminAddExpenseModal
+        isOpen={isAddExpenseOpen}
+        onClose={() => setIsAddExpenseOpen(false)}
+        onSubmitExpense={handleAddExpense}
+      />
     </div>
   );
 }
