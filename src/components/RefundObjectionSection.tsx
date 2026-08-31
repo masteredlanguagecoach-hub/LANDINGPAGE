@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { HelpCircle, ArrowDown, Check, Zap, AlertCircle } from 'lucide-react';
+import { HelpCircle, Check } from 'lucide-react';
 
 export default function RefundObjectionSection() {
   return (
@@ -49,31 +49,35 @@ export default function RefundObjectionSection() {
             </p>
           </div>
 
-          {/* Visual Step Journey */}
+          {/* Visual Step Journey (6 Steps including Fluently Speaking English) */}
           <div className="space-y-3">
             <span className="text-xs font-black uppercase tracking-wider text-slate-400 block text-center">
-              THE 5-STEP CHALLENGE REWARD PATH
+              THE CHALLENGE REWARD PATH
             </span>
 
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 text-center font-bold text-xs sm:text-sm">
-              <div className="bg-[#1F2937] border border-slate-700 p-3.5 rounded-xl text-white space-y-1">
+            <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 text-center font-bold text-xs">
+              <div className="bg-[#1F2937] border border-slate-700 p-3 rounded-xl text-white space-y-1">
                 <span className="text-[10px] text-brand-400 block font-black">STEP 01</span>
                 <span>YOU JOIN FOR ₹399</span>
               </div>
-              <div className="bg-[#1F2937] border border-slate-700 p-3.5 rounded-xl text-white space-y-1">
+              <div className="bg-[#1F2937] border border-slate-700 p-3 rounded-xl text-white space-y-1">
                 <span className="text-[10px] text-brand-400 block font-black">STEP 02</span>
-                <span>YOU COMMIT TO PRACTICE</span>
+                <span>COMMIT TO PRACTICE</span>
               </div>
-              <div className="bg-[#1F2937] border border-brand-500/50 p-3.5 rounded-xl text-white space-y-1 ring-2 ring-brand-500/20">
+              <div className="bg-[#1F2937] border border-brand-500/50 p-3 rounded-xl text-white space-y-1 ring-2 ring-brand-500/20">
                 <span className="text-[10px] text-brand-400 block font-black">STEP 03</span>
-                <span>32 SPEAKING MISSIONS</span>
+                <span>32 MISSIONS</span>
               </div>
-              <div className="bg-[#1F2937] border border-slate-700 p-3.5 rounded-xl text-white space-y-1">
-                <span className="text-[10px] text-brand-400 block font-black">STEP 04</span>
-                <span>MEET REQUIREMENTS</span>
+              <div className="bg-amber-500/10 border border-amber-500/40 p-3 rounded-xl text-amber-300 space-y-1">
+                <span className="text-[10px] text-amber-400 block font-black">STEP 04</span>
+                <span>FLUENT SPEAKING</span>
               </div>
-              <div className="bg-emerald-500/10 border border-emerald-500/40 p-3.5 rounded-xl text-emerald-400 space-y-1">
-                <span className="text-[10px] text-emerald-300 block font-black">STEP 05</span>
+              <div className="bg-[#1F2937] border border-slate-700 p-3 rounded-xl text-white space-y-1">
+                <span className="text-[10px] text-brand-400 block font-black">STEP 05</span>
+                <span>MEET RULES</span>
+              </div>
+              <div className="bg-emerald-500/10 border border-emerald-500/40 p-3 rounded-xl text-emerald-400 space-y-1 col-span-2 sm:col-span-1">
+                <span className="text-[10px] text-emerald-300 block font-black">STEP 06</span>
                 <span>GET ₹300 BACK</span>
               </div>
             </div>

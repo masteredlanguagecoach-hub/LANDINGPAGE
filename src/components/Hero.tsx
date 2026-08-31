@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ArrowRight, Sparkles, CheckCircle2, ShieldCheck, Trophy, Target, Clock, ArrowDown } from 'lucide-react';
+import { ArrowRight, Sparkles, ShieldCheck, Trophy, Target, Clock, ArrowDown } from 'lucide-react';
 
 export default function Hero() {
   const scrollToEnrollment = () => {
@@ -43,47 +43,38 @@ export default function Hero() {
             Accept the challenge, build a consistent English-speaking practice, complete all required challenges within 2 months, and <strong className="text-amber-300 font-black underline decoration-amber-400/50 underline-offset-4">earn ₹300 back</strong>.
           </p>
 
-          {/* Visual Commitment Diagram */}
-          <div className="bg-[#111827] border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-3xl mx-auto shadow-2xl space-y-4">
+          {/* Visual Commitment Diagram (4 Steps) */}
+          <div className="bg-[#111827] border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-4xl mx-auto shadow-2xl space-y-4">
             <span className="text-xs font-black uppercase tracking-wider text-slate-400 block">
               HOW THE COMMITMENT MECHANISM WORKS
             </span>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-center">
               {/* Step 1 */}
               <div className="bg-[#1F2937] border border-slate-700/80 p-4 rounded-2xl text-center space-y-1">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">STEP 1</span>
-                <span className="text-xl font-black text-white block">PAY ₹399</span>
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">STEP 1</span>
+                <span className="text-lg sm:text-xl font-black text-white block">PAY ₹399</span>
                 <span className="text-xs font-semibold text-brand-400 block">Creates Commitment</span>
-              </div>
-
-              {/* Arrow 1 */}
-              <div className="hidden sm:flex items-center justify-center text-brand-400 font-bold">
-                <ArrowRight className="w-6 h-6" />
-              </div>
-              <div className="sm:hidden flex items-center justify-center text-brand-400 py-1">
-                <ArrowDown className="w-5 h-5" />
               </div>
 
               {/* Step 2 */}
               <div className="bg-[#1F2937] border border-brand-500/40 p-4 rounded-2xl text-center space-y-1 ring-2 ring-brand-500/20">
-                <span className="text-xs font-bold text-brand-400 uppercase tracking-wider block">STEP 2</span>
-                <span className="text-lg font-black text-white block">32 CHALLENGES (2 MONTHS)</span>
-                <span className="text-xs font-semibold text-slate-300 block">Creates Consistent Practice</span>
+                <span className="text-[11px] font-bold text-brand-400 uppercase tracking-wider block">STEP 2</span>
+                <span className="text-base sm:text-lg font-black text-white block">32 CHALLENGES (2 MONTHS)</span>
+                <span className="text-xs font-semibold text-slate-300 block">Consistent Practice</span>
               </div>
 
-              {/* Arrow 2 */}
-              <div className="hidden sm:flex items-center justify-center text-emerald-400 font-bold">
-                <ArrowRight className="w-6 h-6" />
-              </div>
-              <div className="sm:hidden flex items-center justify-center text-emerald-400 py-1">
-                <ArrowDown className="w-5 h-5" />
+              {/* Step 3: Fluent Speaking Goal */}
+              <div className="bg-amber-500/10 border border-amber-500/40 p-4 rounded-2xl text-center space-y-1">
+                <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider block">STEP 3</span>
+                <span className="text-base sm:text-lg font-black text-amber-300 block">FLUENTLY SPEAKING ENGLISH</span>
+                <span className="text-xs font-semibold text-amber-400 block">Main Goal Achieved</span>
               </div>
 
-              {/* Step 3 */}
+              {/* Step 4: Refund */}
               <div className="bg-emerald-500/10 border border-emerald-500/40 p-4 rounded-2xl text-center space-y-1">
-                <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block">STEP 3</span>
-                <span className="text-xl font-black text-emerald-400 block">GET ₹300 BACK</span>
+                <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block">STEP 4</span>
+                <span className="text-lg sm:text-xl font-black text-emerald-400 block">GET ₹300 BACK</span>
                 <span className="text-xs font-semibold text-emerald-300 block">Effective Cost = ₹99</span>
               </div>
             </div>
