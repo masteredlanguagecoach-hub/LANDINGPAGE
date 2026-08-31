@@ -5,7 +5,7 @@ const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
 // Default Spreadsheet ID & User's Deployed Apps Script Web App URL fallbacks
 const DEFAULT_SPREADSHEET_ID = '1hveaz4UjoT2odS6YRpB8BNeaFhmpqVEYIRAHCInNzTU';
-const DEFAULT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzOKO05chNfJPD65-gHSLQ8y-Mv1GOTalpsTwGfUqmWy-jpI9rx01nibRSppYy22UwL/exec';
+const DEFAULT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzkxT1beWP6f7px2fuNJwNQo7BY-_-e96MtbsLGL58RoOKouwOEywLP0q6pQNIh-sJSiQ/exec';
 
 export function getSpreadsheetId(): string {
   return process.env.GOOGLE_SHEET_ID || DEFAULT_SPREADSHEET_ID;
