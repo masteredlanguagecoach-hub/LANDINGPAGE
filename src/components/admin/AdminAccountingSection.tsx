@@ -1,20 +1,26 @@
 'use client';
 
 import React from 'react';
-import { Wallet, TrendingUp, TrendingDown, PlusCircle, PieChart, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Wallet, TrendingUp, TrendingDown, PlusCircle, PieChart, ArrowUpRight, ArrowDownRight, Smartphone, ShieldCheck } from 'lucide-react';
 
 interface AdminAccountingSectionProps {
   totalRevenue: number;
+  razorpayRevenue: number;
+  manualRevenue: number;
   totalExpenses: number;
   netBalance: number;
   onOpenAddExpense: () => void;
+  onOpenAddIncome: () => void;
 }
 
 export default function AdminAccountingSection({
   totalRevenue,
+  razorpayRevenue,
+  manualRevenue,
   totalExpenses,
   netBalance,
   onOpenAddExpense,
+  onOpenAddIncome,
 }: AdminAccountingSectionProps) {
   const isProfit = netBalance >= 0;
   const profitMargin = totalRevenue > 0 ? ((netBalance / totalRevenue) * 100).toFixed(1) : '0';
@@ -22,7 +28,7 @@ export default function AdminAccountingSection({
   return (
     <div className="bg-[#111827] border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-5">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800/80 pb-5">
         <div className="space-y-1">
           <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">
             <PieChart className="w-3.5 h-3.5" />
@@ -33,14 +39,24 @@ export default function AdminAccountingSection({
           </h2>
         </div>
 
-        {/* Add Expense Button */}
-        <button
-          onClick={onOpenAddExpense}
-          className="inline-flex items-center gap-2 bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-extrabold text-xs sm:text-sm px-5 py-3 rounded-xl shadow-lg shadow-red-950/40 transition-all cursor-pointer transform hover:-translate-y-0.5"
-        >
-          <PlusCircle className="w-4 h-4" />
-          <span>+ Add New Expense</span>
-        </button>
+        {/* Logger Action Buttons */}
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={onOpenAddIncome}
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white font-extrabold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-lg shadow-emerald-950/40 transition-all cursor-pointer transform hover:-translate-y-0.5"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>+ Add Manual Income</span>
+          </button>
+
+          <button
+            onClick={onOpenAddExpense}
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-extrabold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-lg shadow-red-950/40 transition-all cursor-pointer transform hover:-translate-y-0.5"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>+ Add New Expense</span>
+          </button>
+        </div>
       </div>
 
       {/* 3 Accounting Metric Cards */}
@@ -105,13 +121,20 @@ export default function AdminAccountingSection({
               <TrendingUp className="w-5 h-5" />
             </div>
           </div>
-          <div className="space-y-1">
+          <div className="space-y-2">
             <span className="text-3xl sm:text-4xl font-black text-white block tracking-tight">
               ₹{totalRevenue.toLocaleString('en-IN')}
             </span>
-            <span className="text-xs font-semibold text-blue-400 block">
-              100% Verified Sales Inflow
-            </span>
+            
+            {/* Revenue Breakdown */}
+            <div className="flex items-center gap-2 pt-1 text-[11px] font-bold">
+              <span className="inline-flex items-center gap-1 text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">
+                <ShieldCheck className="w-3 h-3" /> Razorpay: ₹{razorpayRevenue.toLocaleString('en-IN')}
+              </span>
+              <span className="inline-flex items-center gap-1 text-teal-400 bg-teal-500/10 border border-teal-500/20 px-2 py-0.5 rounded-md">
+                <Smartphone className="w-3 h-3" /> Manual: ₹{manualRevenue.toLocaleString('en-IN')}
+              </span>
+            </div>
           </div>
         </div>
 

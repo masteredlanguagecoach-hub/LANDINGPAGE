@@ -7,6 +7,7 @@ import AdminSummaryBanner from '@/components/admin/AdminSummaryBanner';
 import AdminKpiGrid from '@/components/admin/AdminKpiGrid';
 import AdminAccountingSection from '@/components/admin/AdminAccountingSection';
 import AdminAddExpenseModal from '@/components/admin/AdminAddExpenseModal';
+import AdminAddIncomeModal from '@/components/admin/AdminAddIncomeModal';
 import AdminExpenseTable from '@/components/admin/AdminExpenseTable';
 import AdminFiltersBar from '@/components/admin/AdminFiltersBar';
 import AdminDataTable from '@/components/admin/AdminDataTable';
@@ -22,15 +23,19 @@ export default function AdminPage() {
   const [dateRange, setDateRange] = useState('all_time');
   const [selectedCourse, setSelectedCourse] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedChannel, setSelectedChannel] = useState('all'); // 'all', 'razorpay', 'manual'
 
-  // Modal State
+  // Modal States
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
+  const [isAddIncomeOpen, setIsAddIncomeOpen] = useState(false);
 
   // Data States
   const [students, setStudents] = useState<PaidStudentRow[]>([]);
   const [expenses, setExpenses] = useState<ExpenseRow[]>([]);
   const [stats, setStats] = useState({
     totalRevenue: 0,
+    razorpayRevenue: 0,
+    manualRevenue: 0,
     totalExpenses: 0,
     netBalance: 0,
     totalPaidStudentsCount: 0,
@@ -66,6 +71,7 @@ export default function AdminPage() {
         params.append('dateRange', dateRange);
         params.append('course', selectedCourse);
         params.append('status', selectedStatus);
+        params.append('channel', selectedChannel);
         if (searchQuery.trim()) {
           params.append('search', searchQuery.trim());
         }
@@ -97,7 +103,7 @@ export default function AdminPage() {
         setIsRefreshing(false);
       }
     },
-    [dateRange, selectedCourse, selectedStatus, searchQuery]
+    [dateRange, selectedCourse, selectedStatus, selectedChannel, searchQuery]
   );
 
   // Fetch data when filters or auth state changes
@@ -150,6 +156,40 @@ export default function AdminPage() {
     }
   };
 
+  // Submit Manual Income Handler
+  const handleAddIncome = async (incomePayload: {
+    source: string;
+    fullName: string;
+    email: string;
+    whatsappNumber: string;
+    amount: number;
+    notes: string;
+    date: string;
+  }): Promise<boolean> => {
+    if (!adminPin) return false;
+
+    try {
+      const res = await fetch('/api/admin/income', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-pin': adminPin,
+        },
+        body: JSON.stringify(incomePayload),
+      });
+
+      const data = await res.json();
+      if (data && data.success) {
+        await fetchData(adminPin, true);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('[Admin Dashboard] Failed to submit manual income:', err);
+      return false;
+    }
+  };
+
   // Logout handler
   const handleLogout = () => {
     sessionStorage.removeItem('mlc_admin_pin');
@@ -169,7 +209,7 @@ export default function AdminPage() {
       'Full Name',
       'Email',
       'WhatsApp Number',
-      'Course Code',
+      'Course Code / Source',
       'Course Name',
       'Amount (INR)',
       'Payment Status',
@@ -257,9 +297,12 @@ export default function AdminPage() {
         {/* 3. Financial Balance & Accounting Section */}
         <AdminAccountingSection
           totalRevenue={stats.totalRevenue}
+          razorpayRevenue={stats.razorpayRevenue}
+          manualRevenue={stats.manualRevenue}
           totalExpenses={stats.totalExpenses}
           netBalance={stats.netBalance}
           onOpenAddExpense={() => setIsAddExpenseOpen(true)}
+          onOpenAddIncome={() => setIsAddIncomeOpen(true)}
         />
 
         {/* 4. Expenses Log History Table */}
@@ -274,7 +317,7 @@ export default function AdminPage() {
           pendingOrdersCount={stats.pendingOrdersCount}
         />
 
-        {/* 6. Interactive Filters Bar */}
+        {/* 6. Interactive Filters Bar (Includes Channel filter to view Razorpay students normally!) */}
         <AdminFiltersBar
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -284,17 +327,26 @@ export default function AdminPage() {
           setSelectedCourse={setSelectedCourse}
           selectedStatus={selectedStatus}
           setSelectedStatus={setSelectedStatus}
+          selectedChannel={selectedChannel}
+          setSelectedChannel={setSelectedChannel}
         />
 
         {/* 7. Live Synced Student Data Table */}
         <AdminDataTable students={students} isLoading={isLoading} />
       </main>
 
-      {/* Add Expense Logger Modal */}
+      {/* Add Expense Modal */}
       <AdminAddExpenseModal
         isOpen={isAddExpenseOpen}
         onClose={() => setIsAddExpenseOpen(false)}
         onSubmitExpense={handleAddExpense}
+      />
+
+      {/* Add Manual Income Modal */}
+      <AdminAddIncomeModal
+        isOpen={isAddIncomeOpen}
+        onClose={() => setIsAddIncomeOpen(false)}
+        onSubmitIncome={handleAddIncome}
       />
     </div>
   );

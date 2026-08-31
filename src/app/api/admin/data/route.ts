@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDashboardData } from '@/lib/sheets';
-import { PaidStudentRow, ExpenseRow } from '@/types';
+import { PaidStudentRow, ExpenseRow, ManualIncomeRow } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,9 +22,10 @@ export async function GET(req: NextRequest) {
     const rawData = await getAdminDashboardData();
     let rawStudents = rawData.students || [];
     let rawExpenses = rawData.expenses || [];
+    let rawManualIncomes = rawData.manualIncomes || [];
 
-    // Ensure all student string fields are explicitly cast to string to prevent client-side .replace() exceptions
-    const students: PaidStudentRow[] = rawStudents.map((s, idx) => ({
+    // 1. Map Razorpay Students
+    const razorpayStudents: PaidStudentRow[] = rawStudents.map((s, idx) => ({
       timestamp: String(s.timestamp || ''),
       admissionNumber: String(s.admissionNumber || `MLC${786 + idx}`),
       fullName: String(s.fullName || ''),
@@ -42,9 +43,10 @@ export async function GET(req: NextRequest) {
       enrollmentStatus: (s.enrollmentStatus || 'ACTIVE') as any,
       emailDeliveryStatus: (s.emailDeliveryStatus || 'SENT') as any,
       createdAt: String(s.createdAt || s.timestamp || new Date().toISOString()),
+      paymentChannel: 'RAZORPAY',
     }));
 
-    // Ensure all expense fields are safely typed
+    // 2. Map Expenses
     const expenses: ExpenseRow[] = rawExpenses.map((ex, idx) => ({
       timestamp: String(ex.timestamp || ''),
       expenseId: String(ex.expenseId || `EXP_${idx}`),
@@ -55,36 +57,59 @@ export async function GET(req: NextRequest) {
       createdAt: String(ex.createdAt || ex.timestamp || new Date().toISOString()),
     }));
 
-    // Sort students & expenses by newest first
-    students.sort((a, b) => {
-      const timeA = new Date(a.createdAt || a.timestamp || 0).getTime();
-      const timeB = new Date(b.createdAt || b.timestamp || 0).getTime();
-      return timeB - timeA;
-    });
+    // 3. Map Manual Incomes
+    const manualIncomes: ManualIncomeRow[] = rawManualIncomes.map((inc, idx) => ({
+      timestamp: String(inc.timestamp || ''),
+      incomeId: String(inc.incomeId || `INC_${idx}`),
+      source: (inc.source || 'GPay / PhonePe') as any,
+      fullName: String(inc.fullName || 'Direct Student'),
+      email: String(inc.email || ''),
+      whatsappNumber: String(inc.whatsappNumber || ''),
+      amount: Number(inc.amount) || 0,
+      notes: String(inc.notes || ''),
+      date: String(inc.date || inc.timestamp || ''),
+      createdAt: String(inc.createdAt || inc.timestamp || new Date().toISOString()),
+    }));
 
-    expenses.sort((a, b) => {
-      const timeA = new Date(a.createdAt || a.timestamp || 0).getTime();
-      const timeB = new Date(b.createdAt || b.timestamp || 0).getTime();
-      return timeB - timeA;
-    });
+    // Convert Manual Incomes into student table rows if channel === 'all' or 'manual'
+    const manualAsStudents: PaidStudentRow[] = manualIncomes.map((inc) => ({
+      timestamp: inc.timestamp,
+      admissionNumber: inc.incomeId,
+      fullName: inc.fullName,
+      email: inc.email || 'direct@income',
+      emailVerified: 'YES',
+      whatsappNumber: inc.whatsappNumber || 'N/A',
+      courseCode: 'DIRECT',
+      courseName: `Direct Income (${inc.source})`,
+      amount: inc.amount,
+      currency: 'INR',
+      paymentStatus: 'SUCCESS',
+      razorpayOrderId: 'DIRECT_PAYMENT',
+      razorpayPaymentId: inc.source.toUpperCase().replace(/\s+/g, '_'),
+      paymentVerificationStatus: 'MANUAL_ENTRY',
+      enrollmentStatus: 'ACTIVE',
+      emailDeliveryStatus: 'SENT',
+      createdAt: inc.createdAt || inc.timestamp,
+      paymentChannel: 'MANUAL',
+    }));
 
-    // Compute Overall Revenue & Expense Metrics
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-
-    let totalRevenue = 0;
+    // Calculate Segmented Revenues
+    let razorpayRevenue = 0;
     let totalPaidStudentsCount = 0;
     let todaySalesCount = 0;
     let todaySalesAmount = 0;
     let pendingOrdersCount = 0;
 
-    students.forEach((s) => {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+    razorpayStudents.forEach((s) => {
       const isPaid = s.paymentStatus === 'SUCCESS';
       const amt = Number(s.amount) || 0;
       const createdTime = new Date(s.createdAt || s.timestamp || 0).getTime();
 
       if (isPaid) {
-        totalRevenue += amt;
+        razorpayRevenue += amt;
         totalPaidStudentsCount += 1;
 
         if (!isNaN(createdTime) && createdTime >= startOfToday) {
@@ -96,7 +121,13 @@ export async function GET(req: NextRequest) {
       }
     });
 
-    // Compute Total Expenses & Net Balance
+    let manualRevenue = 0;
+    manualIncomes.forEach((inc) => {
+      manualRevenue += Number(inc.amount) || 0;
+    });
+
+    const totalRevenue = razorpayRevenue + manualRevenue;
+
     let totalExpenses = 0;
     expenses.forEach((e) => {
       totalExpenses += Number(e.amount) || 0;
@@ -104,13 +135,31 @@ export async function GET(req: NextRequest) {
 
     const netBalance = totalRevenue - totalExpenses;
 
-    // Filtering logic for student table
+    // Filter Logic
     const searchQuery = (searchParams.get('search') || '').toLowerCase().trim();
     const dateRange = searchParams.get('dateRange') || 'all_time';
     const course = searchParams.get('course') || 'all';
     const status = searchParams.get('status') || 'all';
+    const channel = searchParams.get('channel') || 'all'; // 'all', 'razorpay', 'manual'
 
-    let filteredStudents = students.filter((student) => {
+    // Combine student rows depending on selected channel
+    let combinedStudentsList: PaidStudentRow[] = [];
+    if (channel === 'razorpay') {
+      combinedStudentsList = [...razorpayStudents];
+    } else if (channel === 'manual') {
+      combinedStudentsList = [...manualAsStudents];
+    } else {
+      combinedStudentsList = [...razorpayStudents, ...manualAsStudents];
+    }
+
+    // Sort by newest first
+    combinedStudentsList.sort((a, b) => {
+      const timeA = new Date(a.createdAt || a.timestamp || 0).getTime();
+      const timeB = new Date(b.createdAt || b.timestamp || 0).getTime();
+      return timeB - timeA;
+    });
+
+    let filteredStudents = combinedStudentsList.filter((student) => {
       if (searchQuery) {
         const matchesName = String(student.fullName || '').toLowerCase().includes(searchQuery);
         const matchesEmail = String(student.email || '').toLowerCase().includes(searchQuery);
@@ -165,6 +214,8 @@ export async function GET(req: NextRequest) {
       source: rawData.source,
       stats: {
         totalRevenue,
+        razorpayRevenue,
+        manualRevenue,
         totalExpenses,
         netBalance,
         totalPaidStudentsCount,
@@ -176,6 +227,7 @@ export async function GET(req: NextRequest) {
       },
       students: filteredStudents,
       expenses,
+      manualIncomes,
     });
   } catch (error: any) {
     console.error('[Admin API] Error fetching dashboard data:', error);

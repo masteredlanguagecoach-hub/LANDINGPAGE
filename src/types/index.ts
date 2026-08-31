@@ -60,6 +60,7 @@ export interface PaidStudentRow {
   enrollmentStatus: string; // "ACTIVE"
   emailDeliveryStatus: string; // "SENT" or "FAILED"
   createdAt: string;
+  paymentChannel?: 'RAZORPAY' | 'MANUAL'; // Channel marker
 }
 
 export interface PaymentLogRow {
@@ -85,6 +86,19 @@ export interface ExpenseRow {
   category: 'Meta Ads' | 'Google Ads' | 'Domain & Hosting' | 'Software & Tools' | 'Content & Design' | 'Operational' | 'Other';
   description: string;
   amount: number;
+  date: string;
+  createdAt: string;
+}
+
+export interface ManualIncomeRow {
+  timestamp: string;
+  incomeId: string;
+  source: 'GPay / PhonePe' | 'Bank Transfer' | 'Offline Cash' | 'Sponsorship' | 'Other';
+  fullName: string;
+  email: string;
+  whatsappNumber: string;
+  amount: number;
+  notes: string;
   date: string;
   createdAt: string;
 }

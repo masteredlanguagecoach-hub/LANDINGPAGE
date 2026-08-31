@@ -1,5 +1,5 @@
 import { google } from 'googleapis';
-import { PaidStudentRow, PaymentLogRow, ExpenseRow } from '@/types';
+import { PaidStudentRow, PaymentLogRow, ExpenseRow, ManualIncomeRow } from '@/types';
 
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
@@ -19,6 +19,7 @@ export function getAppsScriptUrl(): string {
 const inMemoryPaidStudents: PaidStudentRow[] = [];
 const inMemoryPaymentLogs: PaymentLogRow[] = [];
 const inMemoryExpenses: ExpenseRow[] = [];
+const inMemoryManualIncomes: ManualIncomeRow[] = [];
 
 /**
  * Initializes authenticated Google Sheets API client using Service Account credentials.
@@ -45,6 +46,7 @@ function getGoogleSheetsClient() {
 export const PAID_STUDENTS_SHEET = 'PAID_STUDENTS';
 export const PAYMENT_LOGS_SHEET = 'PAYMENT_LOGS';
 export const EXPENSES_SHEET = 'EXPENSES';
+export const MANUAL_INCOMES_SHEET = 'MANUAL_INCOMES';
 
 export const PAID_STUDENTS_HEADERS = [
   'Timestamp',
@@ -88,6 +90,19 @@ export const EXPENSES_HEADERS = [
   'Category',
   'Description',
   'Amount',
+  'Date',
+  'Created At',
+];
+
+export const MANUAL_INCOMES_HEADERS = [
+  'Timestamp',
+  'Income ID',
+  'Source',
+  'Student / Client Name',
+  'Email',
+  'WhatsApp Number',
+  'Amount',
+  'Notes',
   'Date',
   'Created At',
 ];
@@ -375,9 +390,6 @@ export async function appendPaymentLogRow(log: PaymentLogRow): Promise<boolean> 
   }
 }
 
-/**
- * Appends a new business expense row to Google Sheets via API and Apps Script URL.
- */
 export async function appendExpenseRow(expense: ExpenseRow): Promise<boolean> {
   inMemoryExpenses.push(expense);
   await sendToAppsScript('addExpense', expense);
@@ -386,7 +398,6 @@ export async function appendExpenseRow(expense: ExpenseRow): Promise<boolean> {
   const sheets = getGoogleSheetsClient();
 
   if (!sheets || !spreadsheetId) {
-    console.log('[GoogleSheets Fallback] Recorded Expense:', expense);
     return true;
   }
 
@@ -416,6 +427,53 @@ export async function appendExpenseRow(expense: ExpenseRow): Promise<boolean> {
     return true;
   } catch (error) {
     console.error('[GoogleSheets] Error appending expense via API:', error);
+    return true;
+  }
+}
+
+/**
+ * Appends a new manual non-Razorpay income row to Google Sheets.
+ */
+export async function appendManualIncomeRow(income: ManualIncomeRow): Promise<boolean> {
+  inMemoryManualIncomes.push(income);
+  await sendToAppsScript('addManualIncome', income);
+
+  const spreadsheetId = getSpreadsheetId();
+  const sheets = getGoogleSheetsClient();
+
+  if (!sheets || !spreadsheetId) {
+    return true;
+  }
+
+  try {
+    await ensureSheetHeaders(sheets, spreadsheetId, MANUAL_INCOMES_SHEET, MANUAL_INCOMES_HEADERS);
+
+    const rowValues = [
+      income.timestamp,
+      income.incomeId,
+      income.source,
+      income.fullName,
+      income.email,
+      income.whatsappNumber,
+      income.amount,
+      income.notes,
+      income.date,
+      income.createdAt,
+    ];
+
+    await sheets.spreadsheets.values.append({
+      spreadsheetId,
+      range: `${MANUAL_INCOMES_SHEET}!A1`,
+      valueInputOption: 'USER_ENTERED',
+      insertDataOption: 'INSERT_ROWS',
+      requestBody: {
+        values: [rowValues],
+      },
+    });
+
+    return true;
+  } catch (error) {
+    console.error('[GoogleSheets] Error appending manual income via API:', error);
     return true;
   }
 }
@@ -474,12 +532,13 @@ export async function updateEmailDeliveryStatus(paymentId: string, newStatus: 'S
 }
 
 /**
- * Fetches all student records, transaction logs, and business expenses for the Admin Dashboard.
+ * Fetches all student records, transaction logs, business expenses, and manual incomes for Admin Dashboard.
  */
 export async function getAdminDashboardData(): Promise<{
   students: PaidStudentRow[];
   logs: PaymentLogRow[];
   expenses: ExpenseRow[];
+  manualIncomes: ManualIncomeRow[];
   source: 'apps_script' | 'google_api' | 'in_memory';
 }> {
   const scriptUrl = getAppsScriptUrl();
@@ -497,6 +556,7 @@ export async function getAdminDashboardData(): Promise<{
           students: data.students,
           logs: data.logs || [],
           expenses: data.expenses || [],
+          manualIncomes: data.manualIncomes || [],
           source: 'apps_script',
         };
       }
@@ -540,6 +600,7 @@ export async function getAdminDashboardData(): Promise<{
             enrollmentStatus: (r[14] || 'ACTIVE') as any,
             emailDeliveryStatus: (r[15] || 'SENT') as any,
             createdAt: r[16] || r[0] || new Date().toISOString(),
+            paymentChannel: 'RAZORPAY',
           });
         }
       }
@@ -570,10 +631,40 @@ export async function getAdminDashboardData(): Promise<{
         console.warn('[GoogleSheets Admin] No EXPENSES sheet tab found yet.');
       }
 
+      // Fetch Manual Incomes
+      let parsedManualIncomes: ManualIncomeRow[] = [];
+      try {
+        const resManual = await sheets.spreadsheets.values.get({
+          spreadsheetId,
+          range: `${MANUAL_INCOMES_SHEET}!A:Z`,
+        });
+        const rowsManual = resManual.data.values || [];
+        if (rowsManual.length > 1) {
+          for (let m = 1; m < rowsManual.length; m++) {
+            const inc = rowsManual[m];
+            parsedManualIncomes.push({
+              timestamp: inc[0] || '',
+              incomeId: inc[1] || `INC_${m}`,
+              source: (inc[2] || 'Other') as any,
+              fullName: inc[3] || '',
+              email: inc[4] || '',
+              whatsappNumber: inc[5] || '',
+              amount: Number(inc[6]) || 0,
+              notes: inc[7] || '',
+              date: inc[8] || inc[0] || new Date().toISOString().slice(0, 10),
+              createdAt: inc[9] || inc[0] || new Date().toISOString(),
+            });
+          }
+        }
+      } catch (manualErr) {
+        console.warn('[GoogleSheets Admin] No MANUAL_INCOMES sheet tab found yet.');
+      }
+
       return {
         students: parsedStudents,
         logs: [],
         expenses: parsedExpenses,
+        manualIncomes: parsedManualIncomes,
         source: 'google_api',
       };
     } catch (err) {
@@ -586,6 +677,7 @@ export async function getAdminDashboardData(): Promise<{
     students: inMemoryPaidStudents,
     logs: inMemoryPaymentLogs,
     expenses: inMemoryExpenses,
+    manualIncomes: inMemoryManualIncomes,
     source: 'in_memory',
   };
 }

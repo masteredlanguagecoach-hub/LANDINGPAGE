@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { PaidStudentRow } from '@/types';
-import { Copy, Check, MessageSquare, ExternalLink, ShieldCheck, Clock, User, Mail } from 'lucide-react';
+import { Copy, Check, MessageSquare, ExternalLink, ShieldCheck, Clock, User, Mail, Smartphone, CreditCard } from 'lucide-react';
 
 interface AdminDataTableProps {
   students: PaidStudentRow[];
@@ -22,7 +22,7 @@ export default function AdminDataTable({ students, isLoading }: AdminDataTablePr
     return (
       <div className="bg-[#111827] border border-slate-800 rounded-3xl p-12 text-center space-y-4">
         <div className="w-12 h-12 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-slate-400 font-semibold text-sm">Syncing live student records with Google Sheet...</p>
+        <p className="text-slate-400 font-semibold text-sm">Syncing live records with Google Sheet database...</p>
       </div>
     );
   }
@@ -30,8 +30,8 @@ export default function AdminDataTable({ students, isLoading }: AdminDataTablePr
   if (!students || students.length === 0) {
     return (
       <div className="bg-[#111827] border border-slate-800 rounded-3xl p-12 text-center space-y-3">
-        <p className="text-slate-300 font-bold text-lg">No student records found</p>
-        <p className="text-slate-500 text-sm">Try adjusting your search terms or date range filters.</p>
+        <p className="text-slate-300 font-bold text-lg">No records found</p>
+        <p className="text-slate-500 text-sm">Try adjusting your search terms or filter selection.</p>
       </div>
     );
   }
@@ -42,18 +42,19 @@ export default function AdminDataTable({ students, isLoading }: AdminDataTablePr
         <table className="w-full text-left text-sm text-slate-300">
           <thead className="bg-[#1F2937]/80 text-xs font-black uppercase tracking-wider text-slate-400 border-b border-slate-800">
             <tr>
-              <th className="px-6 py-4">Admission No</th>
+              <th className="px-6 py-4">Admission / ID</th>
               <th className="px-6 py-4">Student Info</th>
               <th className="px-6 py-4">WhatsApp Contact</th>
-              <th className="px-6 py-4">Course</th>
+              <th className="px-6 py-4">Course / Source</th>
               <th className="px-6 py-4">Amount</th>
-              <th className="px-6 py-4">Payment ID</th>
+              <th className="px-6 py-4">Payment Ref / Channel</th>
               <th className="px-6 py-4">Status</th>
               <th className="px-6 py-4 text-right">Date & Time</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/60 font-medium">
             {students.map((student, idx) => {
+              const isManual = student.paymentChannel === 'MANUAL';
               const admissionNo = String(student.admissionNumber || `MLC${786 + idx}`);
               const rawPhone = String(student.whatsappNumber || '');
               const cleanWhatsApp = rawPhone.replace(/\D/g, '');
@@ -141,9 +142,15 @@ export default function AdminDataTable({ students, isLoading }: AdminDataTablePr
                     )}
                   </td>
 
-                  {/* 4. Course */}
+                  {/* 4. Course / Source */}
                   <td className="px-6 py-4 whitespace-nowrap text-xs font-semibold text-slate-300">
-                    {student.courseCode === 'HI-EN' ? 'Hindi → English' : 'Malayalam → English'}
+                    {isManual ? (
+                      <span className="inline-flex items-center gap-1 text-teal-400 bg-teal-500/10 border border-teal-500/20 px-2.5 py-1 rounded-full text-xs font-bold">
+                        <Smartphone className="w-3 h-3" /> {student.courseName}
+                      </span>
+                    ) : (
+                      <span>{student.courseCode === 'HI-EN' ? 'Hindi → English' : 'Malayalam → English'}</span>
+                    )}
                   </td>
 
                   {/* 5. Amount */}
@@ -151,10 +158,15 @@ export default function AdminDataTable({ students, isLoading }: AdminDataTablePr
                     ₹{student.amount || 399}
                   </td>
 
-                  {/* 6. Razorpay Payment ID */}
+                  {/* 6. Payment Channel / Ref ID */}
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {student.razorpayPaymentId ? (
+                    {isManual ? (
+                      <span className="inline-flex items-center gap-1 bg-teal-500/10 border border-teal-500/30 text-teal-400 text-xs font-bold px-2.5 py-1 rounded-lg">
+                        <Smartphone className="w-3.5 h-3.5" /> Direct Entry
+                      </span>
+                    ) : student.razorpayPaymentId ? (
                       <div className="inline-flex items-center gap-1.5 font-mono text-xs text-slate-400 bg-slate-800/60 px-2.5 py-1 rounded-lg">
+                        <CreditCard className="w-3 h-3 text-brand-400" />
                         <span>{String(student.razorpayPaymentId)}</span>
                         <button
                           onClick={() => handleCopy(String(student.razorpayPaymentId), `pay-${idx}`)}
