@@ -6,23 +6,24 @@ import RazorpayScript from '@/components/RazorpayScript';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'Mastered Language Coach Speaking Challenge | Speak With Confidence',
+  title: 'Mastered English Speaking Challenge | 32 Challenges • ₹300 Back',
   description:
-    'Build your English speaking confidence with the Mastered Language Coach Speaking Challenge. Choose Malayalam to English or Hindi to English and start practicing.',
+    'Accept the Mastered English Speaking Challenge. Complete 32 speaking challenges within 2 months, build a consistent English-practice habit and earn ₹300 back after eligible successful completion.',
   keywords: [
     'Mastered Language Coach',
-    'Speaking Challenge',
-    'Speak With Confidence',
+    'English Speaking Challenge',
     'Malayalam to English',
     'Hindi to English',
-    'English Speaking Course',
-    'Fluent English Practice',
+    '32 Speaking Challenges',
+    '2 Month Habit Challenge',
+    'Speak With Confidence',
+    'AI English Coach',
   ],
   authors: [{ name: 'Mastered Language Coach' }],
   openGraph: {
-    title: 'Mastered Language Coach Speaking Challenge | Speak With Confidence',
+    title: 'Mastered English Speaking Challenge | 32 Challenges • ₹300 Back',
     description:
-      'Build your English speaking confidence with the Mastered Language Coach Speaking Challenge. Choose Malayalam to English or Hindi to English and start practicing.',
+      'Accept the Mastered English Speaking Challenge. Complete 32 speaking challenges within 2 months, build a consistent English-practice habit and earn ₹300 back after eligible successful completion.',
     url: 'https://masteredlanguagecoach.com',
     siteName: 'Mastered Language Coach',
     images: [
@@ -38,8 +39,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Mastered Language Coach Speaking Challenge',
-    description: 'Speak English with confidence. Choose Malayalam to English or Hindi to English.',
+    title: 'Mastered English Speaking Challenge | 32 Challenges • ₹300 Back',
+    description:
+      'Accept the Mastered English Speaking Challenge. Complete 32 speaking challenges within 2 months, build a consistent English-practice habit and earn ₹300 back.',
     images: ['/logo.png'],
   },
 };
@@ -50,10 +52,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} scroll-smooth`}>
-      <body className="font-sans antialiased text-slate-900 bg-white selection:bg-brand-500 selection:text-white">
-        <RazorpayScript />
+    <html lang="en" className={`scroll-smooth ${inter.variable}`}>
+      <body className="bg-slate-950 text-slate-100 antialiased selection:bg-brand-500 selection:text-white">
         {children}
+        <RazorpayScript />
       </body>
     </html>
   );

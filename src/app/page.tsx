@@ -1,12 +1,18 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
-import ProblemSection from '@/components/ProblemSection';
-import SolutionSection from '@/components/SolutionSection';
 import CourseCards from '@/components/CourseCards';
+import RefundObjectionSection from '@/components/RefundObjectionSection';
+import WhyChallengeSection from '@/components/WhyChallengeSection';
+import CourseVideosSection from '@/components/CourseVideosSection';
 import HowItWorks from '@/components/HowItWorks';
+import TwoMonthRuleSection from '@/components/TwoMonthRuleSection';
+import WhatYouGetSection from '@/components/WhatYouGetSection';
+import CommitmentEquationSection from '@/components/CommitmentEquationSection';
+import FinalConversionCta from '@/components/FinalConversionCta';
+import ChallengeRulesSection from '@/components/ChallengeRulesSection';
 import EnrollmentForm from '@/components/EnrollmentForm';
 import Testimonials from '@/components/Testimonials';
 import FaqSection from '@/components/FaqSection';
@@ -21,6 +27,23 @@ export default function LandingPage() {
   const [selectedCourseId, setSelectedCourseId] = useState<string>('ML-EN');
   const [verifiedPaymentData, setVerifiedPaymentData] = useState<any | null>(null);
 
+  // Restore saved course track from session storage if present
+  useEffect(() => {
+    try {
+      const savedCourse = sessionStorage.getItem('mlc_selected_course');
+      if (savedCourse && (savedCourse === 'ML-EN' || savedCourse === 'HI-EN')) {
+        setSelectedCourseId(savedCourse);
+      }
+    } catch (e) {}
+  }, []);
+
+  const handleSelectCourse = (courseId: string) => {
+    setSelectedCourseId(courseId);
+    try {
+      sessionStorage.setItem('mlc_selected_course', courseId);
+    } catch (e) {}
+  };
+
   const handlePaymentSuccess = (successPayload: any) => {
     setVerifiedPaymentData(successPayload);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -31,44 +54,62 @@ export default function LandingPage() {
   }
 
   return (
-    <main className="min-h-screen bg-white text-slate-900 font-sans selection:bg-brand-500 selection:text-white">
-      {/* 1. Sticky Navigation */}
+    <main className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-brand-500 selection:text-white">
+      {/* Sticky Navigation */}
       <Navbar />
 
-      {/* 2. Conversion Hero Section */}
+      {/* SECTION 1 — HERO */}
       <Hero />
 
-      {/* 3. Problem Awareness Section */}
-      <ProblemSection />
-
-      {/* 4. Solution / Methodology Section */}
-      <SolutionSection />
-
-      {/* 5. Course Selection Section */}
+      {/* SECTION 2 — COURSE SELECTION (FIRST INTERACTION) */}
       <CourseCards
         courses={INITIAL_COURSES}
         selectedCourseId={selectedCourseId}
-        onSelectCourse={(id) => setSelectedCourseId(id)}
+        onSelectCourse={handleSelectCourse}
       />
 
-      {/* 6. How It Works Step-by-Step */}
+      {/* SECTION 3 — ANSWER THE BIGGEST QUESTION FIRST */}
+      <RefundObjectionSection />
+
+      {/* SECTION 4 — WHY THE CHALLENGE EXISTS */}
+      <WhyChallengeSection />
+
+      {/* SECTION 5 — THE 4 COURSE-SPECIFIC EXPLANATION VIDEOS */}
+      <CourseVideosSection selectedCourseId={selectedCourseId} />
+
+      {/* SECTION 6 — HOW IT WORKS (STEP-BY-STEP) */}
       <HowItWorks />
 
-      {/* 7. Conversion Enrollment Form */}
+      {/* SECTION 7 — WHY ONLY TWO MONTHS? */}
+      <TwoMonthRuleSection />
+
+      {/* SECTION 8 — WHAT DO I ACTUALLY GET? */}
+      <WhatYouGetSection />
+
+      {/* SECTION 9 — WHY ₹399? */}
+      <CommitmentEquationSection />
+
+      {/* SECTION 10 — FINAL CONVERSION SECTION */}
+      <FinalConversionCta />
+
+      {/* ENROLLMENT & PAYMENT FORM (PRESERVED FUNCTIONAL PAYMENTS) */}
       <EnrollmentForm
         courses={INITIAL_COURSES}
         selectedCourseId={selectedCourseId}
-        onSelectCourse={(id) => setSelectedCourseId(id)}
+        onSelectCourse={handleSelectCourse}
         onPaymentSuccess={handlePaymentSuccess}
       />
 
-      {/* 8. Student Testimonials */}
+      {/* STUDENT TESTIMONIALS */}
       <Testimonials />
 
-      {/* 9. Frequently Asked Questions */}
+      {/* FREQUENTLY ASKED QUESTIONS */}
       <FaqSection />
 
-      {/* 10. Footer */}
+      {/* SECTION 11 — CHALLENGE & REFUND RULES TRANSPARENCY */}
+      <ChallengeRulesSection />
+
+      {/* FOOTER */}
       <Footer />
     </main>
   );
