@@ -245,13 +245,26 @@ async function ensureSheetHeaders(sheets: any, spreadsheetId: string, sheetName:
 }
 
 export async function isPaymentAlreadyProcessed(paymentId: string, orderId: string): Promise<boolean> {
+  // Check in-memory first
+  const memoryMatch = inMemoryPaidStudents.some(
+    (s) => (paymentId && s.razorpayPaymentId === paymentId) || (orderId && s.razorpayOrderId === orderId)
+  );
+  if (memoryMatch) return true;
+
+  // Check Apps Script / Google Sheets live data
+  const dashboardData = await getAdminDashboardData();
+  if (dashboardData && Array.isArray(dashboardData.students)) {
+    const sheetMatch = dashboardData.students.some(
+      (s) => (paymentId && s.razorpayPaymentId === paymentId) || (orderId && s.razorpayOrderId === orderId)
+    );
+    if (sheetMatch) return true;
+  }
+
   const spreadsheetId = getSpreadsheetId();
   const sheets = getGoogleSheetsClient();
 
   if (!sheets || !spreadsheetId) {
-    return inMemoryPaidStudents.some(
-      (s) => s.razorpayPaymentId === paymentId || (orderId && s.razorpayOrderId === orderId)
-    );
+    return false;
   }
 
   try {
@@ -269,7 +282,7 @@ export async function isPaymentAlreadyProcessed(paymentId: string, orderId: stri
 
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
-      if (paymentIdIdx !== -1 && row[paymentIdIdx] === paymentId) {
+      if (paymentIdIdx !== -1 && paymentId && row[paymentIdIdx] === paymentId) {
         return true;
       }
       if (orderIdIdx !== -1 && orderId && row[orderIdIdx] === orderId) {
@@ -286,12 +299,23 @@ export async function isPaymentAlreadyProcessed(paymentId: string, orderId: stri
 export async function appendPaidStudentRow(student: PaidStudentRow): Promise<{ success: boolean; duplicate: boolean }> {
   const alreadyProcessed = await isPaymentAlreadyProcessed(student.razorpayPaymentId, student.razorpayOrderId);
   if (alreadyProcessed) {
+    console.log(`[GoogleSheets] Payment ${student.razorpayPaymentId} already processed. Skipping duplicate write.`);
     return { success: true, duplicate: true };
   }
 
   inMemoryPaidStudents.push(student);
-  await sendToAppsScript('addPaidStudent', student);
 
+  // 1. Primary: Send to Google Apps Script Web App
+  const scriptUrl = getAppsScriptUrl();
+  if (scriptUrl) {
+    const appsScriptSuccess = await sendToAppsScript('addPaidStudent', student);
+    if (appsScriptSuccess) {
+      console.log('[GoogleSheets] Appended student row successfully via Apps Script Web App.');
+      return { success: true, duplicate: false };
+    }
+  }
+
+  // 2. Fallback: Only execute direct Google Sheets Node API if Apps Script is unconfigured/failed
   const spreadsheetId = getSpreadsheetId();
   const sheets = getGoogleSheetsClient();
 
@@ -343,7 +367,12 @@ export async function appendPaidStudentRow(student: PaidStudentRow): Promise<{ s
 
 export async function appendPaymentLogRow(log: PaymentLogRow): Promise<boolean> {
   inMemoryPaymentLogs.push(log);
-  await sendToAppsScript('addPaymentLog', log);
+
+  const scriptUrl = getAppsScriptUrl();
+  if (scriptUrl) {
+    const appsScriptSuccess = await sendToAppsScript('addPaymentLog', log);
+    if (appsScriptSuccess) return true;
+  }
 
   const spreadsheetId = getSpreadsheetId();
   const sheets = getGoogleSheetsClient();
@@ -392,7 +421,12 @@ export async function appendPaymentLogRow(log: PaymentLogRow): Promise<boolean> 
 
 export async function appendExpenseRow(expense: ExpenseRow): Promise<boolean> {
   inMemoryExpenses.push(expense);
-  await sendToAppsScript('addExpense', expense);
+
+  const scriptUrl = getAppsScriptUrl();
+  if (scriptUrl) {
+    const appsScriptSuccess = await sendToAppsScript('addExpense', expense);
+    if (appsScriptSuccess) return true;
+  }
 
   const spreadsheetId = getSpreadsheetId();
   const sheets = getGoogleSheetsClient();
@@ -436,7 +470,12 @@ export async function appendExpenseRow(expense: ExpenseRow): Promise<boolean> {
  */
 export async function appendManualIncomeRow(income: ManualIncomeRow): Promise<boolean> {
   inMemoryManualIncomes.push(income);
-  await sendToAppsScript('addManualIncome', income);
+
+  const scriptUrl = getAppsScriptUrl();
+  if (scriptUrl) {
+    const appsScriptSuccess = await sendToAppsScript('addManualIncome', income);
+    if (appsScriptSuccess) return true;
+  }
 
   const spreadsheetId = getSpreadsheetId();
   const sheets = getGoogleSheetsClient();
