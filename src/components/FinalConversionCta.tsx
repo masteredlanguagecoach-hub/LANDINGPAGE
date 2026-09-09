@@ -32,21 +32,17 @@ export default function FinalConversionCta() {
           {/* Badge */}
           <div className="inline-flex items-center gap-2 bg-gradient-to-r from-brand-500/20 to-red-500/20 border border-brand-500/40 px-4 py-2 rounded-full text-brand-300 text-xs font-black uppercase tracking-wider">
             <Sparkles className="w-4 h-4 text-brand-400 animate-pulse" />
-            <span>THE FINAL CHALLENGE DECISION</span>
+            <span>THE FINAL CHALLENGE DECISION • TODAY SPECIAL OFFER: ₹1</span>
           </div>
 
           {/* Headline */}
           <div className="space-y-3">
             <h2 className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight leading-tight">
-              YOU ARE NOT PAYING ₹399 <br className="hidden sm:block" />
+              YOU ARE COMMITTING YOURSELF <br className="hidden sm:block" />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-amber-300 to-red-500">
-                JUST TO BUY ANOTHER COURSE.
+                TO SPEAK ENGLISH FOR THE NEXT 2 MONTHS.
               </span>
             </h2>
-
-            <p className="text-xl sm:text-3xl font-black text-amber-300 tracking-tight">
-              YOU ARE COMMITTING YOURSELF TO SPEAK ENGLISH FOR THE NEXT 2 MONTHS.
-            </p>
           </div>
 
           {/* Checklist */}
@@ -77,7 +73,7 @@ export default function FinalConversionCta() {
               onClick={scrollToEnrollment}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-gradient-to-r from-brand-500 via-brand-600 to-red-600 hover:from-brand-600 hover:to-red-700 active:scale-[0.99] text-white font-black text-lg sm:text-2xl px-10 py-5 sm:px-12 sm:py-6 rounded-2xl shadow-2xl shadow-brand-500/30 transition-all transform hover:-translate-y-0.5 cursor-pointer"
             >
-              <span>ACCEPT THE CHALLENGE — ₹399</span>
+              <span>ACCEPT THE CHALLENGE — ₹1 TODAY ONLY</span>
               <ArrowRight className="w-7 h-7" />
             </button>
 

@@ -24,7 +24,7 @@ export default function Hero() {
           <div className="inline-flex items-center gap-2 bg-brand-500/10 border border-brand-500/30 px-4 py-2 rounded-full shadow-sm">
             <Sparkles className="w-4 h-4 text-brand-400 animate-pulse" />
             <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-brand-400">
-              MASTERED ENGLISH SPEAKING CHALLENGE
+              MASTERED ENGLISH SPEAKING CHALLENGE • TODAY SPECIAL OFFER: ₹1
             </span>
           </div>
 
@@ -53,8 +53,8 @@ export default function Hero() {
               {/* Step 1 */}
               <div className="bg-[#1F2937] border border-slate-700/80 p-4 rounded-2xl text-center space-y-1">
                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">STEP 1</span>
-                <span className="text-lg sm:text-xl font-black text-white block">PAY ₹399</span>
-                <span className="text-xs font-semibold text-brand-400 block">Creates Commitment</span>
+                <span className="text-lg sm:text-xl font-black text-white block">PAY ₹1</span>
+                <span className="text-xs font-semibold text-brand-400 block">Today Special Offer</span>
               </div>
 
               {/* Step 2 */}
@@ -75,7 +75,7 @@ export default function Hero() {
               <div className="bg-emerald-500/10 border border-emerald-500/40 p-4 rounded-2xl text-center space-y-1">
                 <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block">STEP 4</span>
                 <span className="text-lg sm:text-xl font-black text-emerald-400 block">GET ₹300 BACK</span>
-                <span className="text-xs font-semibold text-emerald-300 block">Effective Cost = ₹99</span>
+                <span className="text-xs font-semibold text-emerald-300 block">Bonus Reward</span>
               </div>
             </div>
           </div>
@@ -86,7 +86,7 @@ export default function Hero() {
               onClick={scrollToEnrollment}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-gradient-to-r from-brand-500 via-brand-600 to-red-600 hover:from-brand-600 hover:to-red-700 active:scale-[0.99] text-white font-black text-lg sm:text-xl px-8 py-4 sm:px-10 sm:py-5 rounded-2xl shadow-xl shadow-brand-500/25 transition-all transform hover:-translate-y-0.5 cursor-pointer"
             >
-              <span>ACCEPT THE CHALLENGE — ₹399</span>
+              <span>ACCEPT THE CHALLENGE — ₹1 TODAY ONLY</span>
               <ArrowRight className="w-6 h-6" />
             </button>
 
