@@ -22,10 +22,10 @@ export const COURSES_CATALOG: Omit<Course, 'price'>[] = [
 
 /**
  * Gets the authoritative price for a course ID.
- * Today Special Offer: ₹1 INR.
+ * Fixed at ₹399 in INR.
  */
 export function getCoursePrice(courseId: string): number {
-  return 1;
+  return 399;
 }
 
 /**
