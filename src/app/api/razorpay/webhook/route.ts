@@ -34,9 +34,12 @@ export async function POST(req: NextRequest) {
       const orderId = payment?.order_id || order?.id;
       const notes = payment?.notes || order?.notes || {};
 
-      const { courseId, fullName, email, whatsappNumber } = notes;
+      const courseId = notes.courseId || notes.course_id;
+      const fullName = notes.fullName || notes.full_name || notes.name || '';
+      const email = notes.email || payment?.email || order?.email || '';
+      const whatsappNumber = notes.whatsappNumber || notes.whatsapp || payment?.contact || '';
 
-      if (paymentId && courseId) {
+      if (paymentId) {
         // Idempotency Check
         const alreadyProcessed = await isPaymentAlreadyProcessed(paymentId, orderId);
         if (alreadyProcessed) {
@@ -44,17 +47,25 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ success: true, message: 'Already processed' });
         }
 
-        const course = getCourseById(courseId);
+        // If client verify route is handling the payment with full student details,
+        // do not append an empty-named row from webhook race conditions.
+        if (!fullName || fullName.trim() === '' || fullName === 'Valued Student') {
+          console.log(`[Webhook] Skipping webhook write for ${paymentId} because name is empty/generic (client verify route handles full enrollment).`);
+          return NextResponse.json({ success: true, message: 'Client verify handles full enrollment' });
+        }
+
+        const resolvedCourseId = courseId || 'ML-EN';
+        const course = getCourseById(resolvedCourseId);
         if (course) {
           const nowIso = new Date().toISOString();
           const admissionNumber = await getNextAdmissionNumber();
 
           // Dispatch email if not already sent
           const emailRes = await sendWelcomeEmail({
-            studentName: fullName || 'Valued Student',
-            studentEmail: email || '',
+            studentName: fullName.trim(),
+            studentEmail: email.trim().toLowerCase(),
             courseName: course.name,
-            whatsappNumber: whatsappNumber || '',
+            whatsappNumber: whatsappNumber.trim(),
             paymentId,
             admissionNumber,
           });
@@ -63,10 +74,10 @@ export async function POST(req: NextRequest) {
             timestamp: nowIso,
             admissionNumber,
             enrollmentId: admissionNumber,
-            fullName: fullName || 'Valued Student',
-            email: email || '',
+            fullName: fullName.trim(),
+            email: email.trim().toLowerCase(),
             emailVerified: 'YES',
-            whatsappNumber: whatsappNumber || '',
+            whatsappNumber: whatsappNumber.trim(),
             courseCode: course.id,
             courseName: course.name,
             amount: course.price,
